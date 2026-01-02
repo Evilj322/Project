@@ -22,34 +22,61 @@ export default async function handler(req, res) {
         return res.status(503).json({ error: 'CONFIG ERROR: API Key missing. Check Vercel Settings -> Env Vars.' });
     }
 
-    try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'https://chef-ai-app.vercel.app',
-                'X-Title': 'ChefAI',
-            },
-            body: JSON.stringify({
-                model: model || 'google/gemini-2.0-flash-exp:free',
-                messages,
-                temperature,
-                max_tokens,
-            }),
-        });
+    const backupModels = [
+        'google/gemini-2.0-flash-exp:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-11b-vision-instruct:free',
+        'microsoft/phi-3-medium-128k-instruct:free'
+    ];
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('OpenRouter API Error:', response.status, errorText);
-            return res.status(response.status).json({ error: errorText || 'API Provider Error' });
+    // Try models sequentially until one works
+    let lastError = null;
+
+    try { // Outer try block for general server errors
+        for (const currentModel of backupModels) {
+            try {
+                console.log(`Trying model: ${currentModel}`);
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': 'https://chef-ai-app.vercel.app',
+                        'X-Title': 'ChefAI',
+                    },
+                    body: JSON.stringify({
+                        model: currentModel,
+                        messages,
+                        temperature,
+                        max_tokens,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return res.status(200).json(data);
+                }
+
+                // If not OK, save error and try next model ONLY if it is 429 or 503
+                const errorText = await response.text();
+                console.warn(`Model ${currentModel} failed: ${response.status}`, errorText);
+                lastError = { status: response.status, message: errorText };
+
+                if (response.status !== 429 && response.status !== 503) {
+                    // Fatal error (e.g. 401 Unauthorized), do not retry
+                    return res.status(response.status).json({ error: errorText });
+                }
+                // If 429 or 503, continue loop to next model
+            } catch (error) {
+                console.error(`Error with ${currentModel}:`, error);
+                lastError = { status: 500, message: error.message };
+            }
         }
 
-        const data = await response.json();
-        res.status(200).json(data);
-    } catch (error) {
-        console.error('Server Function Error:', error);
-        // Return actual error message to client for debugging
-        res.status(500).json({ error: error.message || 'Internal Server Error' });
+        // If all failed
+        return res.status(lastError?.status || 500).json({ error: lastError?.message || 'All models busy. Try later.' });
+    } catch (e) {
+        // Global catch for any unexpected errors outside the model loop
+        res.status(500).json({ error: e.message || 'Internal Server Error' });
     }
 }
