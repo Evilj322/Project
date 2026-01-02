@@ -43,16 +43,21 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${activeKey}`,
-                // Removed Referer and X-Title to avoid 'User not found' issues in some environments like Telegram WebApp
+                'HTTP-Referer': 'https://chef-ai-app.vercel.app', // Some providers require valid URL
+                'X-Title': 'ChefAI'
             },
             body: JSON.stringify({
-                model: 'meta-llama/llama-3.3-70b-instruct:free',
+                model: 'google/gemini-2.0-flash-exp:free', // Trying Gemini Flash as it is more reliable for free tier
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `Придумай РОВНО 7 разных рецептов из этих ингредиентов: ${inputString}. Верни JSON массив с 7 рецептами.` }
                 ],
                 temperature: 0.7,
-                max_tokens: 5000
+                max_tokens: 5000,
+                provider: {
+                    order: ["Google", "DeepInfra"], // Prefer reliable providers
+                    allow_fallbacks: true
+                }
             })
         });
 
