@@ -37,15 +37,28 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
   }
 ]`;
 
+    // Determine endpoint: use Vercel proxy in production, direct in localhost
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    // On localhost we need the key directly. In prod, the server has it.
+    // If user provided a custom key, always use direct.
+    const useProxy = !isLocal && !apiKey;
+
+    const endpoint = useProxy ? '/api/generate' : OPENROUTER_API_URL;
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+
+    // Pass key only if NOT using proxy or if using custom proxy logic that requires it (our proxy has it hardcoded)
+    if (!useProxy) {
+        headers['Authorization'] = `Bearer ${activeKey}`;
+        headers['HTTP-Referer'] = window.location.origin;
+        headers['X-Title'] = 'ChefAI';
+    }
+
     try {
-        const response = await fetch(OPENROUTER_API_URL, {
+        const response = await fetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${activeKey}`,
-                'HTTP-Referer': 'https://chef-ai-app.vercel.app',
-                'X-Title': 'ChefAI'
-            },
+            headers: headers,
             body: JSON.stringify({
                 model: 'meta-llama/llama-3.3-70b-instruct:free',
                 messages: [
