@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     }
 
     const { messages, model, temperature, max_tokens } = req.body;
-    const apiKey = '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';
+    const apiKey = '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';
 
     try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {

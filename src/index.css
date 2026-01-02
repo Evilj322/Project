@@ -390,6 +390,14 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  position: relative;
+  z-index: 10;
+}
+
+@media (hover: none) {
+  .generate-btn:active {
+    transform: none !important;
+  }
 }
 
 .generate-btn:hover {
