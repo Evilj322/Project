@@ -37,6 +37,7 @@ export default async function handler(req, res) {
     // Vision-capable models
     const visionModels = [
         'google/gemini-2.0-flash-exp:free',
+        'qwen/qwen-2-vl-72b-instruct:free',   // Excellent vision performance
         'google/gemini-pro-1.5-exp:free',
         'nvidia/nemotron-nano-12b-v2-vl:free',
     ];
@@ -51,15 +52,14 @@ export default async function handler(req, res) {
     // Try models sequentially until one works
     let lastError = null;
 
-    try { // Outer try block for general server errors
+    try {
         for (const currentModel of availableModels) {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s for vision
+            // Increased timeout for vision tasks
+            const timeoutId = setTimeout(() => controller.abort(), 40000);
 
             try {
-                console.log(`Trying model: ${currentModel}`);
-                console.log(`API Key prefix: ${apiKey.substring(0, 8)}...`);
-                console.log(`Referer: ${referer}`);
+                process.stdout.write(`Trying model: ${currentModel}\n`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -72,8 +72,8 @@ export default async function handler(req, res) {
                         model: currentModel,
                         messages,
                         temperature,
-                        max_tokens,
-                        route: 'fallback', // Allow OpenRouter to use alternative providers
+                        max_tokens: max_tokens || (hasImages ? 1000 : 4000),
+                        route: 'fallback',
                     }),
                     signal: controller.signal
                 });
@@ -81,26 +81,26 @@ export default async function handler(req, res) {
 
                 if (response.ok) {
                     const data = await response.json();
-                    return res.status(200).json(data);
+
+                    // CRITICAL: Check if we actually got a message back
+                    // Some free providers on OpenRouter return 200 OK with empty choices if overloaded
+                    if (data.choices && data.choices.length > 0 && data.choices[0].message?.content) {
+                        return res.status(200).json(data);
+                    } else {
+                        console.warn(`Model ${currentModel} returned empty successful response, trying next...`);
+                        lastError = { status: 200, message: `Model ${currentModel} returned empty message` };
+                        continue; // Try next model
+                    }
                 }
 
-                // If not OK, save error and try next model
                 const errorText = await response.text();
                 console.warn(`Model ${currentModel} failed: ${response.status}`, errorText);
-
-                // Save detailed error for the last fallback
-                const safeMsg = errorText.length > 200 ? errorText.substring(0, 200) + '...' : errorText;
-                lastError = { status: response.status, message: `Provider Error (${currentModel}): ${safeMsg}` };
+                lastError = { status: response.status, message: `Error (${currentModel}): ${errorText.substring(0, 100)}` };
 
             } catch (error) {
                 clearTimeout(timeoutId);
                 console.error(`Error with ${currentModel}:`, error);
-
-                if (error.name === 'AbortError') {
-                    lastError = { status: 408, message: `Timeout (25s) waiting for ${currentModel}` };
-                } else {
-                    lastError = { status: 500, message: error.message };
-                }
+                lastError = { status: 500, message: error.message };
             }
         }
 
