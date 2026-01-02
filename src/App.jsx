@@ -254,19 +254,39 @@ const CookingMode = ({ recipe, onClose }) => {
 
 const ThinkingProcess = () => {
   const [step, setStep] = useState(0);
+  const [iconIndex, setIconIndex] = useState(0);
+
   const steps = [
     "Шеф достает книгу...",
     "Изучает ваши продукты...",
     "Записывает идеи...",
     "Нарезает продукты...",
     "Разогревает соус...",
+    "Смешивает ингредиенты...",
+    "Проверяет вкус...",
+    "Добавляет специи...",
     "Почти готово!"
+  ];
+
+  // Array of cooking-related icons
+  const cookingIcons = [
+    <UtensilsCrossed size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <ChefHat size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Salad size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Coffee size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Flame size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Utensils size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Zap size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Sparkles size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <BrainCircuit size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
+    <Heart size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
       setStep(prev => (prev + 1) % steps.length);
-    }, 2500);
+      setIconIndex(prev => (prev + 1) % cookingIcons.length);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -311,16 +331,25 @@ const ThinkingProcess = () => {
           />
         ))}
 
-        {/* Прыгающая сковородка/ингредиенты */}
+        {/* Прыгающие сменяющиеся иконки */}
         <motion.div
+          key={iconIndex}
+          initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
           animate={{
-            y: [0, -15, 0],
-            rotate: [0, -5, 5, 0]
+            scale: 1,
+            opacity: 1,
+            rotate: 0,
+            y: [0, -15, 0]
           }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          transition={{
+            scale: { duration: 0.3 },
+            opacity: { duration: 0.3 },
+            rotate: { duration: 0.3 },
+            y: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
+          }}
           style={{ position: 'relative', zIndex: 2, color: 'var(--primary)' }}
         >
-          <UtensilsCrossed size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />
+          {cookingIcons[iconIndex]}
 
           {/* Маленькие летающие овощи вокруг */}
           <motion.div
@@ -481,7 +510,7 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
-    const targetCount = 8;
+    const targetCount = 12;
     const currentTitles = [];
 
     try {

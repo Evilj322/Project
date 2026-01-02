@@ -143,8 +143,8 @@ export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], a
  * Main function (for backward compatibility, but can be used for batch)
  */
 export const generateChefGPTSuggestions = async (inputString, apiKey) => {
-    // Generate 8 in parallel for variety
-    const count = 8;
+    // Generate 12 in parallel for variety
+    const count = 12;
     const promises = Array.from({ length: count }).map((_, i) =>
         generateSingleAIRecipe(inputString, [], apiKey)
     );
