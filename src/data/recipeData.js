@@ -15,8 +15,11 @@ export const categories = [
   { id: 'drinks', name: 'Напитки', icon: '🍹' }
 ];
 
-// 30 authentic Russian recipes from JSON
-export const recipes = recipesData;
+// 30 authentic Russian recipes from JSON - auto-generate ID if missing
+export const recipes = recipesData.map((recipe, index) => ({
+  ...recipe,
+  id: recipe.id || `recipe-${index + 1}`
+}));
 
 // Helper function to adjust ingredients for serving count
 export const adjustServings = (recipe, targetServings) => {
