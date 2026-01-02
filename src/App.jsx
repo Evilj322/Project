@@ -273,77 +273,66 @@ const ThinkingProcess = () => {
   return (
     <div className="thinking-container" style={{
       textAlign: 'center',
-      padding: '40px 20px',
+      padding: '50px 20px',
       background: 'rgba(255,255,255,0.02)',
       borderRadius: 32,
       border: '1px solid rgba(255,255,255,0.05)',
-      position: 'relative',
-      overflow: 'hidden'
+      position: 'relative'
     }}>
-      <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 30px' }}>
-        {/* Персонаж Шеф (Колпак + Лицо) */}
+      <div style={{ marginBottom: 30, position: 'relative', display: 'inline-block' }}>
+        {/* Фоновое свечение */}
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 80,
+            height: 80,
+            background: 'var(--primary)',
+            borderRadius: '50%',
+            filter: 'blur(30px)',
+            zIndex: 0
+          }}
+        />
+
+        {/* Премиальная иконка */}
         <motion.div
           animate={{
-            y: [0, -10, 0],
-            rotate: [0, -2, 2, 0]
+            rotate: [0, 15, -15, 0],
+            scale: [1, 1.1, 1]
           }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 2 }}
+          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+          style={{ position: 'relative', zIndex: 1, color: 'var(--primary)' }}
         >
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <ChefHat size={50} color="var(--primary)" style={{ marginBottom: -15, zIndex: 3 }} />
-            <div style={{
-              width: 50,
-              height: 50,
-              background: 'var(--primary)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(255, 107, 107, 0.4)'
-            }}>
-              <Search size={24} color="#fff" />
-            </div>
-
-            <motion.div
-              animate={{ opacity: [0, 1, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              style={{ position: 'absolute', top: -10, right: -15 }}
-            >
-              <Zap size={24} color="#ffeb3b" />
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Рука с ручкой (имитация письма) */}
-        <motion.div
-          animate={{
-            x: [-15, 15, -15],
-            y: [20, 25, 20],
-            rotate: [0, 15, 0]
-          }}
-          transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-          style={{ position: 'absolute', bottom: 10, right: 0, color: '#fff' }}
-        >
-          <Type size={32} />
+          <Sparkles size={64} style={{ filter: 'drop-shadow(0 0 10px var(--primary))' }} />
         </motion.div>
       </div>
 
       <motion.p
         key={step}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{ fontSize: 20, fontWeight: 500, color: '#fff', marginBottom: 25 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        style={{
+          fontSize: 18,
+          fontWeight: 500,
+          color: '#fff',
+          marginBottom: 25,
+          letterSpacing: '0.5px',
+          opacity: 0.9
+        }}
       >
         {steps[step]}
       </motion.p>
 
-      {/* Прогресс-бар для ожидания 8 рецептов */}
-      <div style={{ width: '200px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: 2, margin: '0 auto' }}>
+      {/* Элегантный прогресс-бар */}
+      <div style={{ width: '160px', height: '2px', background: 'rgba(255,255,255,0.05)', borderRadius: 1, margin: '0 auto' }}>
         <motion.div
           animate={{ width: ['0%', '100%'] }}
           transition={{ duration: 15, ease: "linear", repeat: Infinity }}
-          style={{ height: '100%', background: 'var(--primary)', borderRadius: 2 }}
+          style={{ height: '100%', background: 'var(--primary)', boxShadow: '0 0 10px var(--primary)' }}
         />
       </div>
     </div>
