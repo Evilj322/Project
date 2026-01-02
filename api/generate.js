@@ -30,11 +30,12 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free', // Primary - Xiaomi free model for text
     ];
 
-    // Vision-capable free models (for image processing)
+    // Vision-capable models (without :free to bypass rate limit)
+    // These use paid providers but are very cheap (~$0.001-0.01 per request)
     const visionModels = [
-        'qwen/qwen2.5-vl-32b-instruct:free', // Qwen Vision-Language
-        'meta-llama/llama-3.2-11b-vision-instruct:free', // Llama Vision
-        'google/gemma-3-27b-it:free', // Gemma 3 multimodal
+        'google/gemini-flash-1.5', // Very cheap: $0.075/M tokens
+        'qwen/qwen-2.5-vl-72b-instruct', // Cheap vision model
+        'meta-llama/llama-3.2-11b-vision-instruct', // Llama Vision paid
     ];
 
     // Check if the request involves images
