@@ -12,11 +12,13 @@ export default async function handler(req, res) {
     const { messages, model, temperature, max_tokens } = req.body;
 
     // Use environment variable to prevent key leakage and blocking
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    // Also sanitize it in case user added quotes in Vercel UI
+    const rawKey = process.env.OPENROUTER_API_KEY || '';
+    const apiKey = rawKey.trim().replace(/['";]/g, '');
 
     if (!apiKey) {
         console.error('OPENROUTER_API_KEY is not set in environment variables');
-        return res.status(500).json({ error: 'Server configuration error. Please check logs.' });
+        return res.status(500).json({ error: 'Server configuration error: Key missing in Vercel Env Vars.' });
     }
 
     try {
@@ -29,7 +31,7 @@ export default async function handler(req, res) {
                 'X-Title': 'ChefAI',
             },
             body: JSON.stringify({
-                model: model || 'meta-llama/llama-3.3-70b-instruct:free',
+                model: model || 'google/gemini-2.0-flash-exp:free',
                 messages,
                 temperature,
                 max_tokens,

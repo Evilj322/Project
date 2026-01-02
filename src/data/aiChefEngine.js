@@ -60,7 +60,7 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
-                model: 'meta-llama/llama-3.3-70b-instruct:free',
+                model: 'google/gemini-2.0-flash-exp:free', // Using Gemini Flash 2.0 because Llama 70B times out on Vercel Functions (10s limit)
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `Придумай РОВНО 7 разных рецептов из этих ингредиентов: ${inputString}. Верни JSON массив с 7 рецептами.` }
