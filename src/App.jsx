@@ -125,6 +125,69 @@ const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFav
   </div>
 );
 
+const CookingMode = ({ recipe, onClose }) => {
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const handleNext = () => {
+    if (currentStep < recipe.instructions.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      onClose();
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const progress = ((currentStep + 1) / recipe.instructions.length) * 100;
+
+  return (
+    <div className="cooking-mode-overlay">
+      <div className="cooking-header">
+        <button onClick={onClose} className="close-cooking-btn"><X size={24} /></button>
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <span className="step-counter">{currentStep + 1} / {recipe.instructions.length}</span>
+      </div>
+
+      <div className="cooking-body">
+        <h2 className="step-title">Шаг {currentStep + 1}</h2>
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className="step-instruction"
+        >
+          {recipe.instructions[currentStep]}
+        </motion.div>
+      </div>
+
+      <div className="cooking-footer">
+        <button
+          className="nav-step-btn prev"
+          onClick={handlePrev}
+          disabled={currentStep === 0}
+        >
+          <ArrowLeft size={24} />
+        </button>
+
+        <button className="nav-step-btn next" onClick={handleNext}>
+          {currentStep === recipe.instructions.length - 1 ? (
+            <>Завершить <CheckCircle2 size={24} /></>
+          ) : (
+            <>Готово! <ArrowRight size={24} /></>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ThinkingProcess = () => {
   const [step, setStep] = useState(0);
   const steps = [
@@ -165,6 +228,7 @@ const App = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiRecipes, setAiRecipes] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [activeCookingRecipe, setActiveCookingRecipe] = useState(null);
 
   // Image recognition states
   const [inputMode, setInputMode] = useState('text'); // 'text' or 'photo'
@@ -517,9 +581,21 @@ const App = () => {
           <RecipeDetail
             recipe={selectedRecipe}
             onClose={() => setSelectedRecipe(null)}
-            onStartCooking={() => setSelectedRecipe(null)}
+            onStartCooking={() => {
+              setActiveCookingRecipe(selectedRecipe);
+              setSelectedRecipe(null);
+            }}
             isFavorite={favorites.includes(selectedRecipe.id)}
             onToggleFavorite={() => toggleFavorite(selectedRecipe)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeCookingRecipe && (
+          <CookingMode
+            recipe={activeCookingRecipe}
+            onClose={() => setActiveCookingRecipe(null)}
           />
         )}
       </AnimatePresence>
