@@ -17,8 +17,9 @@ export default async function handler(req, res) {
     const apiKey = rawKey.trim().replace(/['";]/g, '');
 
     if (!apiKey) {
-        console.error('OPENROUTER_API_KEY is not set in environment variables');
-        return res.status(500).json({ error: 'Server configuration error: Key missing in Vercel Env Vars.' });
+        console.error('OPENROUTER_API_KEY is not set');
+        // Return 503 so client knows it's a config issue, not a crash
+        return res.status(503).json({ error: 'CONFIG ERROR: API Key missing. Check Vercel Settings -> Env Vars.' });
     }
 
     try {
@@ -39,15 +40,16 @@ export default async function handler(req, res) {
         });
 
         if (!response.ok) {
-            const errorData = await response.text();
-            console.error('OpenRouter API Error:', response.status, errorData);
-            return res.status(response.status).json({ error: errorData });
+            const errorText = await response.text();
+            console.error('OpenRouter API Error:', response.status, errorText);
+            return res.status(response.status).json({ error: errorText || 'API Provider Error' });
         }
 
         const data = await response.json();
         res.status(200).json(data);
     } catch (error) {
         console.error('Server Function Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        // Return actual error message to client for debugging
+        res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 }
