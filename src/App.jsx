@@ -306,28 +306,6 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <header style={{ marginBottom: 40, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{
-          background: 'white',
-          padding: '12px 24px',
-          borderRadius: '20px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.1)',
-          display: 'inline-flex',
-          marginBottom: 16
-        }}>
-          <img
-            src="/logo.png"
-            alt="ChefAI"
-            style={{
-              height: 48,
-              width: 'auto',
-            }}
-          />
-        </div>
-        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 16, fontWeight: 500, letterSpacing: '0.02em' }}>
-          Искусственный интеллект на вашей кухне
-        </p>
-      </header>
 
       {activeTab === 'explore' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
