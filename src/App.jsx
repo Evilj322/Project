@@ -443,7 +443,7 @@ const App = () => {
             >
               Все
             </div>
-            {categories.map(cat => (
+            {categories.filter(cat => cat.id !== 'all').map(cat => (
               <div
                 key={cat.id}
                 className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
