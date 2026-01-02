@@ -61,12 +61,12 @@ export default async function handler(req, res) {
             if (elapsed > 9000) break;
 
             const controller = new AbortController();
-            // Give each model more time for image processing (7.5s first, 5s others)
-            const waitTime = i === 0 ? 7500 : 5000;
+            // Give vision models more time (15s first, 8s others)
+            const waitTime = hasImages ? (i === 0 ? 15000 : 8000) : (i === 0 ? 7500 : 5000);
             const timeoutId = setTimeout(() => controller.abort(), waitTime);
 
             try {
-                process.stdout.write(`Vercel Proxy: Calling ${currentModel}\n`);
+                console.log(`Vercel Proxy: Calling ${currentModel} (hasImages: ${hasImages})`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -89,30 +89,30 @@ export default async function handler(req, res) {
                 const data = await response.json().catch(() => null);
 
                 if (response.ok && data?.choices?.[0]?.message?.content) {
+                    console.log(`Vercel Proxy: Success with ${currentModel}`);
                     return res.status(200).json(data);
                 }
 
-                // If specialized error, record and try backup
+                // Record error and try backup
                 const errorMsg = data?.error?.message || '';
+                console.log(`Vercel Proxy: ${currentModel} failed - ${errorMsg || response.status}`);
                 lastError = { status: response.status, message: errorMsg || `Ошибка API (${currentModel})` };
-
-                if (errorMsg.toLowerCase().includes('image input') || errorMsg.toLowerCase().includes('multimodal')) {
-                    continue;
-                }
 
             } catch (error) {
                 clearTimeout(timeoutId);
-                console.error(`Vercel Proxy Error (${currentModel}):`, error);
+                console.error(`Vercel Proxy Timeout (${currentModel}):`, error.name);
                 lastError = { status: 504, message: `Модель ${currentModel} не ответила вовремя.` };
             }
         }
 
         // Return error in structured format for client
+        console.log(`Vercel Proxy: All models failed. Last error:`, lastError);
         const finalStatus = lastError?.status && lastError.status !== 200 ? lastError.status : 503;
         return res.status(finalStatus).json({
             error: { message: lastError?.message || 'Не удалось связаться с Шефом. Попробуйте снова через минуту.' }
         });
     } catch (e) {
-        res.status(500).json({ error: { message: 'Критическая ошибка сервера. Проверьте соединение.' } });
+        console.error('Vercel Proxy Critical Error:', e);
+        res.status(500).json({ error: { message: `Критическая ошибка: ${e.message}` } });
     }
 }
