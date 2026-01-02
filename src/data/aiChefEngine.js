@@ -38,7 +38,7 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
 ]`;
 
     // Determine endpoint: use Vercel proxy in production, direct in localhost
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isLocal = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     // On localhost we need the key directly. In prod, the server has it.
     // If user provided a custom key, always use direct.
     const useProxy = !isLocal && !apiKey;
@@ -50,25 +50,61 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
 
     // Pass key only if NOT using proxy or if using custom proxy logic that requires it (our proxy has it hardcoded)
     if (!useProxy) {
+        if (!activeKey) {
+            throw new Error("Для работы локально требуется API ключ (в настройках или .env)");
+        }
         headers['Authorization'] = `Bearer ${activeKey}`;
         headers['HTTP-Referer'] = window.location.origin;
         headers['X-Title'] = 'ChefAI';
     }
 
+    // LIST OF MODELS TO TRY LOCALLY (Client-side fallback)
+    const modelsToTry = [
+        'google/gemini-flash-1.5:free', // Stable
+        'google/gemini-2.0-flash-exp:free', // Fast
+        'meta-llama/llama-3.2-11b-vision-instruct:free',
+    ];
+
     try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                model: 'google/gemini-2.0-flash-exp:free', // Using Gemini Flash 2.0 because Llama 70B times out on Vercel Functions (10s limit)
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Придумай РОВНО 7 разных рецептов из этих ингредиентов: ${inputString}. Верни JSON массив с 7 рецептами.` }
-                ],
-                temperature: 0.7,
-                max_tokens: 5000
-            })
-        });
+        let response;
+        let lastError;
+
+        // Simple fallback loop for client-side
+        for (const model of modelsToTry) {
+            try {
+                console.log(`Local AI: Trying model ${model}...`);
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: `Придумай РОВНО 7 разных рецептов из этих ингредиентов: ${inputString}. Верни JSON массив с 7 рецептами.` }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 5000
+                    })
+                });
+
+                if (res.ok) {
+                    response = res;
+                    break; // Success
+                }
+
+                lastError = await res.text();
+                // If using proxy (/api/generate), one failing request means the BACKEND loop failed, so no need to retry here.
+                if (useProxy) break;
+
+            } catch (e) {
+                lastError = e.message;
+                if (useProxy) break;
+            }
+        }
+
+        if (!response || !response.ok) {
+            throw new Error(lastError || `API Error: ${response?.status || 404}`);
+        }
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
