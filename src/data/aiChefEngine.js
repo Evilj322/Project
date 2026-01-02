@@ -74,7 +74,11 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
 
     // LIST OF MODELS TO TRY LOCALLY (Client-side fallback)
     const modelsToTry = [
-        'google/gemini-2.0-flash-exp:free', // Google Gemini 2.0 Flash Experimental
+        'google/gemini-2.0-flash-exp:free',
+        'deepseek/deepseek-r1:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'google/gemini-pro-1.5-exp:free',
+        'xiaomi/mimo-v2-flash:free'
     ];
 
     try {

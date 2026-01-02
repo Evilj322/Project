@@ -25,14 +25,19 @@ export default async function handler(req, res) {
     // Use dynamic referer to prevent blocking
     const referer = req.headers.origin || req.headers.referer || 'https://chef-ai-app.vercel.app';
 
-    // Primary model: Google Gemini 2.0 Flash Experimental (free)
+    // List of reliable free models to try sequentially
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-2.0-flash-exp:free',   // Primary - Top quality
+        'deepseek/deepseek-r1:free',          // Great reasoning & logic
+        'meta-llama/llama-3.3-70b-instruct:free', // Very stable and smart
+        'google/gemini-pro-1.5-exp:free',     // Reliable fallback
+        'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
     // Vision-capable models
     const visionModels = [
-        'google/gemini-2.0-flash-exp:free', // Gemini 2.0 has excellent vision capabilities
+        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-pro-1.5-exp:free',
         'nvidia/nemotron-nano-12b-v2-vl:free',
     ];
 
