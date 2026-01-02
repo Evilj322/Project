@@ -4,7 +4,7 @@ import {
   Clock, Flame, Heart, X,
   ArrowLeft, ArrowRight, CheckCircle2,
   Zap, BrainCircuit, Salad, Coffee,
-  Settings, Brain, Camera, Type
+  Settings, Brain, Camera, Type, UtensilsCrossed
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { categories, recipes } from './data/recipeData';
@@ -481,7 +481,7 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
-    const targetCount = 10;
+    const targetCount = 3;
     const currentTitles = [];
 
     try {
@@ -489,7 +489,8 @@ const App = () => {
 
       const results = await Promise.all(indexes.map(async (i) => {
         try {
-          await new Promise(r => setTimeout(r, i * 2500));
+          // Smaller staggered delay for better experience
+          await new Promise(r => setTimeout(r, i * 800));
 
           const recipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
 
