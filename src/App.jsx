@@ -302,7 +302,7 @@ const App = () => {
   }, [savedAiRecipes, aiRecipes]);
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ paddingTop: 40 }}>
 
       {activeTab === 'explore' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

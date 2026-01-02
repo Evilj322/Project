@@ -43,8 +43,7 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${activeKey}`,
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'AI Chef Recipe App'
+                // Removed Referer and X-Title to avoid 'User not found' issues in some environments like Telegram WebApp
             },
             body: JSON.stringify({
                 model: 'meta-llama/llama-3.3-70b-instruct:free',
@@ -53,7 +52,7 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
                     { role: 'user', content: `Придумай РОВНО 7 разных рецептов из этих ингредиентов: ${inputString}. Верни JSON массив с 7 рецептами.` }
                 ],
                 temperature: 0.7,
-                max_tokens: 5000  // Enough for 7 recipes
+                max_tokens: 5000
             })
         });
 
