@@ -74,12 +74,9 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
 Верни ТОЛЬКО JSON массив строк без markdown: ["продукт1", "продукт2"]
 Если продуктов нет, верни: []`;
 
-  // Vision-capable models to try (free tier)
+  // Vision model - Gemma only
   const visionModels = [
-    'google/gemma-3-4b-it:free',
-    'google/gemini-2.0-flash-exp:free',
-    'google/gemini-pro-1.5-exp:free',
-    'qwen/qwen2.5-vl-72b-instruct:free'
+    'google/gemma-3-4b-it:free'
   ];
 
   let lastError;

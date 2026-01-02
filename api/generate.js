@@ -34,12 +34,9 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
-    // Vision-capable models - multiple reliable options
+    // Vision model - Gemma only
     const visionModels = [
-        'google/gemma-3-4b-it:free',
-        'google/gemini-2.0-flash-exp:free',
-        'google/gemini-pro-1.5-exp:free',
-        'qwen/qwen2.5-vl-72b-instruct:free'
+        'google/gemma-3-4b-it:free'
     ];
 
     // Check if the request involves images
