@@ -11,14 +11,19 @@ export default async function handler(req, res) {
 
     const { messages, model, temperature, max_tokens } = req.body;
 
-    // Use environment variable to prevent key leakage and blocking
-    // Also sanitize it in case user added quotes in Vercel UI
-    const rawKey = process.env.OPENROUTER_API_KEY || '';
+    // Check if the request involves images
+    const hasImages = Array.isArray(messages) && messages.some(m =>
+        Array.isArray(m.content) && m.content.some(c => c.type === 'image_url')
+    );
+
+    // Use separate API key for vision to avoid rate limits
+    const rawKey = hasImages
+        ? (process.env.VISION_API_KEY || process.env.OPENROUTER_API_KEY || '')
+        : (process.env.OPENROUTER_API_KEY || '');
     const apiKey = rawKey.trim().replace(/['";]/g, '');
 
     if (!apiKey) {
-        console.error('OPENROUTER_API_KEY is not set');
-        // Return 503 so client knows it's a config issue, not a crash
+        console.error('API Key is not set');
         return res.status(503).json({ error: 'CONFIG ERROR: API Key missing. Check Vercel Settings -> Env Vars.' });
     }
 
@@ -38,11 +43,6 @@ export default async function handler(req, res) {
     const visionModels = [
         'google/gemma-3-4b-it:free'
     ];
-
-    // Check if the request involves images
-    const hasImages = Array.isArray(messages) && messages.some(m =>
-        Array.isArray(m.content) && m.content.some(c => c.type === 'image_url')
-    );
 
     let availableModels = hasImages ? visionModels : backupModels;
 
