@@ -36,11 +36,11 @@ export default async function handler(req, res) {
 
     // Vision-capable models ONLY - Verified for image support
     const visionModels = [
-        'google/gemini-2.0-flash-exp:free',       // Extremely fast & reliable vision
+        'nvidia/nemotron-nano-12b-v2-vl:free',    // Priority model requested by user
+        'google/gemini-2.0-flash-exp:free',       // Extremely fast fallback
         'google/gemini-flash-1.5:free',
-        'qwen/qwen2.5-vl-72b-instruct:free',      // Native Vision-Language model
+        'qwen/qwen2.5-vl-72b-instruct:free',
         'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'google/gemini-pro-1.5-exp:free',
     ];
 
     // Check if the request involves images
