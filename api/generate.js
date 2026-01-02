@@ -34,13 +34,13 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
-    // Vision-capable models - Updated for January 2026
+    // Vision-capable models ONLY - Verified for image support
     const visionModels = [
-        'google/gemini-flash-1.5:free',           // Highly stable
-        'google/gemma-3-27b-it:free',             // New multimodality champion
-        'qwen/qwen2.5-vl-72b-instruct:free',      // Excellent but can be busy
+        'google/gemini-2.0-flash-exp:free',       // Extremely fast & reliable vision
+        'google/gemini-flash-1.5:free',
+        'qwen/qwen2.5-vl-72b-instruct:free',      // Native Vision-Language model
         'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'mistralai/mistral-small-3.1-24b-instruct:free',
+        'google/gemini-pro-1.5-exp:free',
     ];
 
     // Check if the request involves images
@@ -58,14 +58,13 @@ export default async function handler(req, res) {
         for (const currentModel of availableModels) {
             // Respect Vercel's 10s limit
             const elapsed = Date.now() - startTime;
-            if (elapsed > 8500) break; // Stop if we're close to 10s
+            if (elapsed > 8800) break;
 
             const controller = new AbortController();
-            // Give each model ~4.5s
-            const timeoutId = setTimeout(() => controller.abort(), 4500);
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
 
             try {
-                process.stdout.write(`Vercel Proxy: Trying ${currentModel} (Images: ${hasImages})\n`);
+                process.stdout.write(`Vercel Vision Proxy: Trying ${currentModel}\n`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -77,46 +76,42 @@ export default async function handler(req, res) {
                     body: JSON.stringify({
                         model: currentModel,
                         messages,
-                        temperature: 0.1, // Lower temperature for better extraction
-                        max_tokens: max_tokens || (hasImages ? 800 : 4000),
+                        temperature: 0.1,
+                        max_tokens: max_tokens || (hasImages ? 1000 : 4000),
                         route: 'fallback',
                     }),
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
 
-                if (response.ok) {
-                    const data = await response.json();
+                const data = await response.json().catch(() => null);
 
-                    // CRITICAL: Check if we actually got a message back
-                    // Some free providers on OpenRouter return 200 OK with empty choices if overloaded
-                    if (data.choices && data.choices.length > 0 && data.choices[0].message?.content) {
-                        return res.status(200).json(data);
-                    } else {
-                        console.warn(`Model ${currentModel} returned 200 but empty content.`);
-                        lastError = { status: 503, message: `Модель ${currentModel} вернула пустой ответ. Провайдеры перегружены.` };
-                        continue; // Try next model
-                    }
+                if (response.ok && data?.choices?.[0]?.message?.content) {
+                    return res.status(200).json(data);
                 }
 
-                const errorText = await response.text();
-                console.warn(`Model ${currentModel} status ${response.status}:`, errorText);
-                lastError = { status: response.status, message: `Ошибка API (${currentModel}): ${errorText.substring(0, 100)}` };
+                // If specialized error about image support, try next immediately
+                const errorMsg = data?.error?.message || '';
+                if (errorMsg.toLowerCase().includes('image input') || errorMsg.toLowerCase().includes('multimodal')) {
+                    console.warn(`Model ${currentModel} doesn't support images, skipping...`);
+                    continue;
+                }
+
+                lastError = { status: response.status, message: errorMsg || `Ошибка API (${currentModel})` };
 
             } catch (error) {
                 clearTimeout(timeoutId);
-                console.error(`Vercel Proxy Error (${currentModel}):`, error);
-                lastError = { status: 504, message: `Тайм-аут или ошибка сети у ${currentModel}` };
+                console.error(`Vercel Vision Error (${currentModel}):`, error);
+                lastError = { status: 504, message: `Тайм-аут модели ${currentModel}` };
             }
         }
 
-        // If all failed, ensure we return an error status (NOT 200)
+        // Return error in structured format for client
         const finalStatus = lastError?.status && lastError.status !== 200 ? lastError.status : 503;
         return res.status(finalStatus).json({
-            error: { message: lastError?.message || 'Все ИИ-модели перегружены. Попробуйте через минуту.' }
+            error: { message: lastError?.message || 'Все Vision-модели перегружены. Попробуйте снова.' }
         });
     } catch (e) {
-        // Global catch for any unexpected errors outside the model loop
-        res.status(500).json({ error: { message: e.message || 'Внутренняя ошибка сервера' } });
+        res.status(500).json({ error: { message: e.message || 'Системная ошибка сервера' } });
     }
 }
