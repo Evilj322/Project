@@ -1,0 +1,7 @@
+# После создания репозитория на GitHub, выполните:
+
+git remote add origin https://github.com/ВАШ_USERNAME/chef-gpt-app.git
+git branch -M main  
+git push -u origin main
+
+# Замените ВАШ_USERNAME на ваш GitHub username!

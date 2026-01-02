@@ -290,8 +290,17 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <header style={{ marginBottom: 32 }}>
-        <h1 className="premium-gradient-text" style={{ fontSize: 36, margin: 0 }}>ChefGPT</h1>
+      <header style={{ marginBottom: 32, textAlign: 'center' }}>
+        <img
+          src="/logo.png"
+          alt="ChefGPT"
+          style={{
+            height: 60,
+            width: 'auto',
+            marginBottom: 8,
+            filter: 'drop-shadow(0 4px 12px rgba(255, 107, 107, 0.3))'
+          }}
+        />
         <p style={{ color: 'var(--text-muted)', margin: '4px 0', fontSize: 16 }}>Искусственный интеллект на вашей кухне</p>
       </header>
 
