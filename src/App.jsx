@@ -13,11 +13,10 @@ import ImageUploader from './components/ImageUploader';
 import DetectedIngredients from './components/DetectedIngredients';
 
 const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) => (
-  <motion.div
+  <div
     className="recipe-card"
-    initial={{ opacity: 0, y: 30 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+    // Valid HTML div doesn't support initial/animate/transition props from Framer Motion
+    // Using CSS class for animation instead if needed, but for now focusing on click reliability
     onClick={() => onClick(recipe)}
   >
     <button
@@ -44,7 +43,7 @@ const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) =>
         <span><Flame size={14} /> {recipe.calories} ккал</span>
       </div>
     </div>
-  </motion.div>
+  </div>
 );
 
 const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFavorite }) => (

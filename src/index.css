@@ -21,6 +21,21 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  /* Helps with accidental text selection on taps */
+  user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 button,
 a,
 input,
