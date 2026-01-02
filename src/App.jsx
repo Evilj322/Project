@@ -417,7 +417,9 @@ const App = () => {
   }, [savedAiRecipes]);
 
   const toggleFavorite = (recipe) => {
+    console.log('toggleFavorite called with:', recipe);
     const id = recipe.id;
+    console.log('Recipe ID:', id, 'Current favorites:', favorites);
     if (favorites.includes(id)) {
       setFavorites(prev => prev.filter(f => f !== id));
       // If it's an AI recipe, remove it from saved storage to keep it clean
