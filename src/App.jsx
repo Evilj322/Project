@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { categories, recipes } from './data/recipeData';
-import { generateChefGPTSuggestions } from './data/aiChefEngine';
+import { generateChefGPTSuggestions, generateSingleAIRecipe } from './data/aiChefEngine';
 import ImageUploader from './components/ImageUploader';
 import DetectedIngredients from './components/DetectedIngredients';
 
@@ -376,13 +376,37 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
+    const recipeCount = 5; // Предлагаем 5 вариантов для баланса скорости и выбора
+    let foundAny = false;
+
     try {
-      // Pass null as apiKey if empty, so the engine uses the default
-      const results = await generateChefGPTSuggestions(ingredients, apiKey || null);
-      setAiRecipes(results);
+      // Запускаем 5 запросов параллельно с небольшой задержкой, чтобы не перегружать API
+      const promises = Array.from({ length: recipeCount }).map(async (_, i) => {
+        try {
+          // Выдерживаем паузу между запросами в 1 секунду
+          if (i > 0) await new Promise(r => setTimeout(r, i * 1000));
+
+          const recipe = await generateSingleAIRecipe(ingredients, [], apiKey || null);
+
+          setAiRecipes(prev => {
+            // Проверка на дубликаты (иногда ИИ выдает одно и то же)
+            if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
+            return [...prev, recipe];
+          });
+          foundAny = true;
+        } catch (err) {
+          console.warn(`Ошибка генерации одного из рецептов:`, err);
+        }
+      });
+
+      // Ждем завершения всех запросов
+      await Promise.all(promises);
+
+      if (!foundAny) {
+        throw new Error("Не удалось сгенерировать ни одного рецепта. Попробуйте изменить список ингредиентов.");
+      }
     } catch (e) {
-      console.error("Generation failed", e);
-      // Remove specific API key check since we have a default
+      console.error("AI Generation failed", e);
       setError(`Ошибка нейросети: ${e.message}. Попробуйте позже.`);
     } finally {
       setIsGenerating(false);
@@ -565,9 +589,7 @@ const App = () => {
           </div>
 
           <div style={{ marginTop: 40 }}>
-            {isGenerating && <ThinkingProcess />}
-
-            {!isGenerating && aiRecipes.length > 0 && (
+            {aiRecipes.length > 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -586,6 +608,12 @@ const App = () => {
                   ))}
                 </div>
               </motion.div>
+            )}
+
+            {isGenerating && (
+              <div style={{ marginTop: aiRecipes.length > 0 ? 40 : 0 }}>
+                <ThinkingProcess />
+              </div>
             )}
           </div>
         </motion.div>

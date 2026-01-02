@@ -1,4 +1,4 @@
-import { recipes } from './recipeData.js';
+import { recipes as staticRecipes } from './recipeData.js';
 
 // Default API key config (removed for security, uses proxy in prod, .env in local)
 const DEFAULT_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
@@ -8,11 +8,10 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // --- AI ENGINE ---
 
-export const generateChefGPTSuggestions = async (inputString, apiKey) => {
-    // Use provided key or fall back to default
-    const activeKey = apiKey || DEFAULT_API_KEY;
-
-    const systemPrompt = `Ты ЭКСТРЕМАЛЬНО ПОДРОБНЫЙ шеф-повар-наставник для полных новичков. Твоя цель — провести пользователя за руку через каждый грамм и каждую минуту процесса.
+/**
+ * System prompt definition to ensure consistency
+ */
+const SYSTEM_PROMPT = `Ты ЭКСТРЕМАЛЬНО ПОДРОБНЫЙ шеф-повар-наставник для полных новичков. Твоя цель — провести пользователя за руку через каждый грамм и каждую минуту процесса.
 
 ПРАВИЛА ДЛЯ РЕЦЕПТОВ:
 1. ТОЛЬКО РЕАЛЬНЫЕ БЛЮДА: Никаких выдуманных сочетаний или "странных" экспериментов. Предлагай только то, что существует в реальной кулинарии (классика русской, итальянской, французской и других кухонь).
@@ -26,10 +25,9 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
 4. ОБЪЯСНЯЙ "ПОЧЕМУ": "Не накрывайте крышкой на этом этапе, чтобы овощи остались хрустящими, а не превратились в кашу".
 5. КОЛИЧЕСТВО ШАГОВ: Минимум 8-12 очень подробных шагов. Все цифры из раздела ингредиентов должны дублироваться в тексте шагов.
 
-Верни ТОЛЬКО валидный JSON массив с 7 рецептами (без markdown, без пояснений):
-[
-  {
-    "id": "recipe_1",
+Верни ТОЛЬКО валидный JSON объект (для одной версии) или массив (для нескольких):
+{
+    "id": "recipe_unique",
     "title": "Название",
     "category": "dinner",
     "description": "Эмоциональное описание (3 предложения) о вкусе и пользе.",
@@ -43,36 +41,30 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
     ],
     "instructions": [
       "Шаг 1: Подготовка. Возьмите ровно [количество] [ингредиент] и промойте их под холодной водой...",
-      "Шаг 2: Нарезка. Используйте острый нож, чтобы нарезать [ингредиент] на кубики размером ровно 1.5 см...",
-      "Шаг 3: Температура. Поставьте сковороду на огонь выше среднего. Подождите ровно 180 секунд...",
       "...и так далее минимум 8-12 шагов"
     ],
     "image": null
-  }
-]`;
+}
+`;
 
-    // Determine endpoint: use Vercel proxy in production, direct in localhost
+/**
+ * Helper to call AI with fallback logic
+ */
+async function callOpenRouter(messages, apiKey) {
     const isLocal = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    // On localhost we need the key directly. In prod, the server has it.
-    // If user provided a custom key, always use direct.
+    const activeKey = apiKey || DEFAULT_API_KEY;
     const useProxy = !isLocal && !apiKey;
 
     const endpoint = useProxy ? '/api/generate' : OPENROUTER_API_URL;
-    const headers = {
-        'Content-Type': 'application/json',
-    };
+    const headers = { 'Content-Type': 'application/json' };
 
-    // Pass key only if NOT using proxy or if using custom proxy logic that requires it (our proxy has it hardcoded)
     if (!useProxy) {
-        if (!activeKey) {
-            throw new Error("Для работы локально требуется API ключ (в настройках или .env)");
-        }
+        if (!activeKey) throw new Error("API Key missing");
         headers['Authorization'] = `Bearer ${activeKey}`;
         headers['HTTP-Referer'] = window.location.origin;
         headers['X-Title'] = 'ChefAI';
     }
 
-    // LIST OF MODELS TO TRY LOCALLY (Client-side fallback)
     const modelsToTry = [
         'google/gemini-2.0-flash-exp:free',
         'deepseek/deepseek-r1:free',
@@ -81,126 +73,80 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
         'xiaomi/mimo-v2-flash:free'
     ];
 
-    try {
-        let response;
-        let lastError;
-
-        // Simple fallback loop for client-side
-        for (const model of modelsToTry) {
-            try {
-                console.log(`Local AI: Trying model ${model}...`);
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            {
-                                role: 'user', content: `Придумай РОВНО 7 САМЫХ ПОДРОБНЫХ и РЕАЛЬНЫХ (существующих в кулинарии) рецептов из этих ингредиентов: ${inputString}. 
-ТРЕБОВАНИЕ: Блюда должны быть узнаваемыми и логичными (классика). Каждый шаг должен содержать точные цифры веса, времени и температуры. Описывай каждое движение руки. Минимум 10 подробных шагов на каждый рецепт. Все цифры из ингредиентов ДОЛЖНЫ быть упомянуты в шагах приготовления.
-Верни ТОЛЬКО JSON массив.` }
-                        ],
-                        temperature: 0.7,
-                        max_tokens: 8000
-                    })
-                });
-
-                if (res.ok) {
-                    response = res;
-                    break; // Success
-                }
-
-                lastError = await res.text();
-                // If using proxy (/api/generate), one failing request means the BACKEND loop failed, so no need to retry here.
-                if (useProxy) break;
-
-            } catch (e) {
-                lastError = e.message;
-                if (useProxy) break;
-            }
-        }
-
-        if (!response || !response.ok) {
-            throw new Error(lastError || `API Error: ${response?.status || 404}`);
-        }
-
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        let textResponse = data.choices?.[0]?.message?.content;
-
-        if (!textResponse) throw new Error("Empty response from AI");
-
-        console.log("🤖 Raw AI response:", textResponse.substring(0, 500)); // Debug log
-
-        // Clean thinking blocks if present (R1 models use <think></think>)
-        textResponse = textResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-
-        // Clean markdown code blocks
-        textResponse = textResponse
-            .replace(/```json\s*/gi, '')
-            .replace(/```\s*/g, '')
-            .trim();
-
-        // Remove any leading/trailing explanatory text, extract only the JSON array
-        // Look for the first [ and last ] to extract the JSON array
-        const firstBracket = textResponse.indexOf('[');
-        const lastBracket = textResponse.lastIndexOf(']');
-
-        if (firstBracket === -1 || lastBracket === -1 || firstBracket >= lastBracket) {
-            console.error("❌ Could not find valid JSON array in response:", textResponse);
-            throw new Error("AI returned invalid format (no JSON array found)");
-        }
-
-        const finalJson = textResponse.substring(firstBracket, lastBracket + 1);
-        console.log("📝 Extracted JSON:", finalJson.substring(0, 200)); // Debug log
-
-        let recipes;
+    let lastError;
+    for (const model of modelsToTry) {
         try {
-            recipes = JSON.parse(finalJson);
-        } catch (parseError) {
-            console.error("❌ JSON Parse Error:", parseError.message);
-            console.error("📄 Failed JSON:", finalJson);
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model,
+                    messages,
+                    temperature: 0.7,
+                    max_tokens: 4000
+                })
+            });
 
-            // Try to fix truncated JSON by closing it
-            try {
-                console.log("🔧 Attempting to repair truncated JSON...");
-                let repairedJson = finalJson.trim();
-                // Close any unclosed strings, objects, and arrays
-                const openBrackets = (repairedJson.match(/\[/g) || []).length;
-                const closeBrackets = (repairedJson.match(/\]/g) || []).length;
-                const openBraces = (repairedJson.match(/\{/g) || []).length;
-                const closeBraces = (repairedJson.match(/\}/g) || []).length;
+            if (res.ok) {
+                const data = await res.json();
+                let text = data.choices?.[0]?.message?.content;
+                if (!text) continue;
 
-                // Add missing closing characters
-                if (openBraces > closeBraces) {
-                    repairedJson += '}'.repeat(openBraces - closeBraces);
+                // Clean and Extract JSON
+                text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+                const start = text.indexOf('{');
+                const end = text.lastIndexOf('}');
+                const startArr = text.indexOf('[');
+                const endArr = text.lastIndexOf(']');
+
+                let jsonStr;
+                if (startArr !== -1 && (start === -1 || startArr < start)) {
+                    jsonStr = text.substring(startArr, endArr + 1);
+                } else {
+                    jsonStr = text.substring(start, end + 1);
                 }
-                if (openBrackets > closeBrackets) {
-                    repairedJson += ']'.repeat(openBrackets - closeBrackets);
-                }
 
-                recipes = JSON.parse(repairedJson);
-                console.log("✅ JSON repaired successfully!");
-            } catch (repairError) {
-                console.error("❌ Failed to repair JSON:", repairError.message);
-                throw new Error(`Invalid JSON from AI: ${parseError.message}`);
+                return JSON.parse(jsonStr);
             }
+            lastError = await res.text();
+            if (useProxy) break;
+        } catch (e) {
+            lastError = e.message;
+            if (useProxy) break;
         }
-
-        // Ensure IDs are unique and image is null
-        return recipes.map((r, i) => ({
-            ...r,
-            id: `ai-openrouter-${Date.now()}-${i}`,
-            image: null
-        }));
-
-    } catch (error) {
-        console.error("AI Generation failed:", error);
-        throw error;
     }
+    throw new Error(lastError || "AI failed after trying all models");
+}
+
+/**
+ * Generate a single unique recipe
+ */
+export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], apiKey = null) => {
+    const prompt = `Придумай ОДИН самый подробный и РЕАЛЬНЫЙ рецепт из этих ингредиентов: ${ingredients}. 
+Блюдо должно быть классическим и НЕ должно быть из этого списка: ${excludedTitles.join(', ')}.
+ТРЕБОВАНИЕ: Минимум 10 подробных шагов с цифрами. Верни ТОЛЬКО JSON объект {}`;
+
+    const result = await callOpenRouter([
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+    ], apiKey);
+
+    return {
+        ...result,
+        id: `ai-single-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        image: null
+    };
+};
+
+/**
+ * Main function (for backward compatibility, but can be used for batch)
+ */
+export const generateChefGPTSuggestions = async (inputString, apiKey) => {
+    // Generate 3 in parallel for a good balance of speed and breadth
+    const count = 3;
+    const promises = Array.from({ length: count }).map((_, i) =>
+        generateSingleAIRecipe(inputString, [], apiKey)
+    );
+    return Promise.all(promises);
 };
