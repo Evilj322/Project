@@ -22,16 +22,16 @@ export default async function handler(req, res) {
         return res.status(503).json({ error: 'CONFIG ERROR: API Key missing. Check Vercel Settings -> Env Vars.' });
     }
 
+    // Use dynamic referer to prevent blocking
+    const referer = req.headers.origin || req.headers.referer || 'https://chef-ai-app.vercel.app';
+
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free', // Google
-        'deepseek/deepseek-r1-distill-llama-70b:free', // DeepSeek
-        'meta-llama/llama-3.3-70b-instruct:free', // Meta High Tier
-        'liquid/lfm-40b:free', // Liquid (Very Stable)
-        'openchat/openchat-7b:free', // OpenChat (Often ignored but works)
-        'mistralai/mistral-7b-instruct:free', // Mistral
-        'microsoft/phi-3-mini-128k-instruct:free', // Microsoft
-        'huggingfaceh4/zephyr-7b-beta:free', // Zephyr
-        'qwen/qwen-2.5-vl-72b-instruct:free', // Qwen VL
+        'google/gemini-2.0-flash-exp:free', // Primary - best for vision
+        'google/gemma-3-4b-it:free', // fast Google model
+        'deepseek/deepseek-r1-0528:free', // DeepSeek reasoning model
+        'meta-llama/llama-4-maverick:free', // Meta Llama 4
+        'microsoft/phi-4-reasoning-plus:free', // Microsoft reasoning
+        'mistralai/devstral-small:free', // Mistral code model
     ];
 
     // Check if the request involves images
@@ -42,10 +42,11 @@ export default async function handler(req, res) {
     let availableModels = backupModels;
     if (hasImages) {
         // Filter only vision-capable models if images are present
+        // Currently only Gemini supports vision in our list
         availableModels = backupModels.filter(m =>
-            m.toLowerCase().includes('gemini') || m.toLowerCase().includes('vision')
+            m.toLowerCase().includes('gemini')
         );
-        if (availableModels.length === 0) availableModels = [backupModels[0]]; // Fallback to Gemini if nothing matches
+        if (availableModels.length === 0) availableModels = ['google/gemini-2.0-flash-exp:free'];
     }
 
     // Try models sequentially until one works
@@ -63,7 +64,7 @@ export default async function handler(req, res) {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${apiKey}`,
-                        'HTTP-Referer': 'https://chef-ai-app.vercel.app',
+                        'HTTP-Referer': referer,
                         'X-Title': 'ChefAI',
                     },
                     body: JSON.stringify({
