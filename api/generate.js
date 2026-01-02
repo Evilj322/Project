@@ -24,8 +24,8 @@ export default async function handler(req, res) {
 
     const backupModels = [
         'google/gemini-2.0-flash-exp:free',
-        'google/gemini-2.0-flash-thinking-exp:free', // Additional Vision backup
-        'meta-llama/llama-3.3-70b-instruct:free',
+        'google/gemini-2.0-flash-thinking-exp:free',
+        'qwen/qwen-2-vl-72b-instruct:free', // Proven vision model
         'meta-llama/llama-3.2-11b-vision-instruct:free',
         'microsoft/phi-3-medium-128k-instruct:free'
     ];
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     try { // Outer try block for general server errors
         for (const currentModel of availableModels) {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s hard timeout per model
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s for vision
 
             try {
                 console.log(`Trying model: ${currentModel}`);
@@ -80,16 +80,17 @@ export default async function handler(req, res) {
                 // If not OK, save error and try next model
                 const errorText = await response.text();
                 console.warn(`Model ${currentModel} failed: ${response.status}`, errorText);
-                lastError = { status: response.status, message: errorText };
 
-                // Retry on ANY error (429, 503, 500, or even 400 if model compatibility issue)
-                // We want to be aggressive with fallback to ensure user gets a result
+                // Save detailed error for the last fallback
+                const safeMsg = errorText.length > 200 ? errorText.substring(0, 200) + '...' : errorText;
+                lastError = { status: response.status, message: `Provider Error (${currentModel}): ${safeMsg}` };
+
             } catch (error) {
                 clearTimeout(timeoutId);
                 console.error(`Error with ${currentModel}:`, error);
 
                 if (error.name === 'AbortError') {
-                    lastError = { status: 408, message: `Timeout (15s) waiting for ${currentModel}` };
+                    lastError = { status: 408, message: `Timeout (25s) waiting for ${currentModel}` };
                 } else {
                     lastError = { status: 500, message: error.message };
                 }
