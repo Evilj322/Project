@@ -62,40 +62,10 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
   // Determine if we are in production
   const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
-  // Choose endpoint and key strategy
-  let endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-  let headers = {
-    'Content-Type': 'application/json',
-    'HTTP-Referer': window.location.origin,
-    'X-Title': 'AI Chef Recipe App'
-  };
-
   // If provided apiKey is empty, try to use environment variable in local dev
   let activeKey = apiKey;
   if (!activeKey && !isProduction) {
     activeKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-  }
-
-  // Use Proxy in Production OR if no key is available locally (trying to use server-side key)
-  // BUT: In localhost without explicit key, we can't really use the Vercel function unless we proxy to it (which Vite doesn't do by default to a deployed URL).
-  // So: logic -> if isProduction, ALWAYS use /api/generate and ignore client-side key.
-
-  if (isProduction) {
-    endpoint = '/api/generate';
-    // No Authorization header needed for proxy (it handles it)
-    // Headers for proxy
-    headers = {
-      'Content-Type': 'application/json'
-    };
-  } else {
-    // Local development direct call logic
-    if (activeKey) {
-      headers['Authorization'] = `Bearer ${activeKey}`;
-    } else {
-      // Fallback: try to call local serverless function if running with vercel dev?
-      // Or just warn user.
-      console.warn("No API Key found for local Vision API call");
-    }
   }
 
   const prompt = `Проанализируй это изображение холодильника или продуктов.
@@ -104,56 +74,110 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
 Верни ТОЛЬКО JSON массив строк без markdown: ["продукт1", "продукт2"]
 Если продуктов нет, верни: []`;
 
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({
-        model: 'nvidia/nemotron-nano-12b-v2-vl:free', // Явное указание модели
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { type: 'image_url', image_url: { url: base64Image } }
-            ]
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 1000
-      })
-    });
+  // Vision-capable models to try (free tier)
+  const visionModels = [
+    'google/gemini-2.0-flash-exp:free',
+    'google/gemini-pro-1.5-exp:free',
+    'meta-llama/llama-4-maverick:free',
+    'qwen/qwen2.5-vl-72b-instruct:free'
+  ];
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `API Error: ${response.status}`);
+  let lastError;
+
+  for (const model of visionModels) {
+    try {
+      let endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+      let headers = {
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'AI Chef Recipe App'
+      };
+
+      if (isProduction) {
+        endpoint = '/api/generate';
+        headers = { 'Content-Type': 'application/json' };
+      } else if (activeKey) {
+        headers['Authorization'] = `Bearer ${activeKey}`;
+      }
+
+      console.log(`Trying vision model: ${model}`);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: base64Image } }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 1000
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        lastError = errData.error?.message || `API Error: ${response.status}`;
+        console.warn(`Model ${model} failed: ${lastError}`);
+        continue; // Try next model
+      }
+
+      const data = await response.json();
+      let textResponse = data.choices?.[0]?.message?.content;
+
+      if (!textResponse) {
+        lastError = 'Empty response from AI';
+        console.warn(`Model ${model}: ${lastError}`);
+        continue;
+      }
+
+      // Clean up response - handle thinking tags from some models
+      textResponse = textResponse
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+      // Find JSON array
+      const startArr = textResponse.indexOf('[');
+      const endArr = textResponse.lastIndexOf(']');
+      if (startArr !== -1 && endArr !== -1) {
+        textResponse = textResponse.substring(startArr, endArr + 1);
+      }
+
+      const ingredients = JSON.parse(textResponse);
+
+      if (!Array.isArray(ingredients)) {
+        lastError = 'Response is not an array';
+        console.warn(`Model ${model}: ${lastError}`);
+        continue;
+      }
+
+      const validIngredients = ingredients.filter(item => typeof item === 'string' && item.trim().length > 0);
+
+      if (validIngredients.length > 0) {
+        console.log(`Success with model ${model}: found ${validIngredients.length} ingredients`);
+        return validIngredients;
+      } else {
+        // Empty array is valid - means no products found
+        return [];
+      }
+
+    } catch (error) {
+      lastError = error.message;
+      console.error(`Model ${model} error:`, error);
+      continue;
     }
-
-    const data = await response.json();
-    let textResponse = data.choices?.[0]?.message?.content;
-
-    if (!textResponse) {
-      throw new Error('Empty response from AI');
-    }
-
-    // Clean up response
-    textResponse = textResponse
-      .replace(/```json\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
-    const ingredients = JSON.parse(textResponse);
-
-    if (!Array.isArray(ingredients)) {
-      throw new Error('Response is not an array');
-    }
-
-    return ingredients.filter(item => typeof item === 'string' && item.trim().length > 0);
-
-  } catch (error) {
-    console.error('Image analysis failed:', error);
-    throw error;
   }
+
+  // All models failed
+  throw new Error(lastError || 'Не удалось проанализировать изображение. Попробуйте другое фото.');
 };
 
 /**
