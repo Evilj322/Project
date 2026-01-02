@@ -34,10 +34,9 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
-    // Vision-capable models ONLY - Prioritizing Nemotron as requested
+    // Vision-capable models EXCLUSIVELY - Nemotron ONLY as per user mandate
     const visionModels = [
-        'nvidia/nemotron-nano-12b-v2-vl:free',    // Primary
-        'google/gemini-flash-1.5:free',           // Fail-safe backup
+        'nvidia/nemotron-nano-12b-v2-vl:free',
     ];
 
     // Check if the request involves images
