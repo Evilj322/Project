@@ -257,16 +257,13 @@ const App = () => {
     setError(null);
 
     try {
-      const results = await generateChefGPTSuggestions(ingredients, apiKey);
+      // Pass null as apiKey if empty, so the engine uses the default
+      const results = await generateChefGPTSuggestions(ingredients, apiKey || null);
       setAiRecipes(results);
     } catch (e) {
       console.error("Generation failed", e);
-      if (e.message === 'NO_API_KEY') {
-        setError("Для работы нейросети требуется API ключ. Пожалуйста, введите его в настройках.");
-        setShowSettings(true);
-      } else {
-        setError(`Ошибка нейросети: ${e.message}. Попробуйте позже.`);
-      }
+      // Remove specific API key check since we have a default
+      setError(`Ошибка нейросети: ${e.message}. Попробуйте позже.`);
     } finally {
       setIsGenerating(false);
     }
