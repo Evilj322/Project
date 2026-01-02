@@ -47,27 +47,6 @@ const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) =>
 );
 
 const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFavorite }) => {
-  const [servings, setServings] = useState(recipe.servings || 4);
-
-  // Calculate ratio for adjusting ingredients
-  const ratio = servings / (recipe.servings || 4);
-
-  const adjustAmount = (amount) => {
-    const match = amount.match(/^([\d.,]+)\s*(.*)$/);
-    if (match) {
-      const num = parseFloat(match[1].replace(',', '.'));
-      const adjusted = Math.round(num * ratio * 10) / 10;
-      return `${adjusted}${match[2]}`;
-    }
-    return amount;
-  };
-
-  const adjustedCalories = Math.round((recipe.calories || 0) * ratio);
-  const adjustedMacros = {
-    protein: Math.round((recipe.macros?.protein || 0) * ratio),
-    fats: Math.round((recipe.macros?.fats || 0) * ratio),
-    carbs: Math.round((recipe.macros?.carbs || 0) * ratio)
-  };
 
   return (
     <div
@@ -95,57 +74,23 @@ const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFav
             </button>
           </div>
 
-          {/* Portion Counter */}
-          <div className="portion-counter" style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 16,
-            margin: '20px 0',
-            padding: '16px',
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: 12
-          }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Порций:</span>
-            <button
-              onClick={() => setServings(Math.max(1, servings - 1))}
-              style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'var(--primary)', border: 'none',
-                color: 'white', fontSize: 20, fontWeight: 'bold',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
-            >−</button>
-            <span style={{
-              fontSize: 24, fontWeight: 700, minWidth: 40, textAlign: 'center',
-              color: 'var(--primary)'
-            }}>{servings}</span>
-            <button
-              onClick={() => setServings(servings + 1)}
-              style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'var(--primary)', border: 'none',
-                color: 'white', fontSize: 20, fontWeight: 'bold',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
-            >+</button>
-          </div>
+
 
           <div className="macros-container">
             <div className="macro-item">
-              <span className="macro-value">{adjustedMacros.protein}г</span>
+              <span className="macro-value">{recipe.macros?.protein || 0}г</span>
               <span className="macro-label">Белки</span>
             </div>
             <div className="macro-item">
-              <span className="macro-value">{adjustedMacros.fats}г</span>
+              <span className="macro-value">{recipe.macros?.fats || 0}г</span>
               <span className="macro-label">Жиры</span>
             </div>
             <div className="macro-item">
-              <span className="macro-value">{adjustedMacros.carbs}г</span>
+              <span className="macro-value">{recipe.macros?.carbs || 0}г</span>
               <span className="macro-label">Углев.</span>
             </div>
             <div className="macro-item">
-              <span className="macro-value">{adjustedCalories}</span>
+              <span className="macro-value">{recipe.calories || 0}</span>
               <span className="macro-label">ккал</span>
             </div>
           </div>
@@ -162,7 +107,7 @@ const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFav
               {recipe.ingredients.map((ing, i) => (
                 <div key={i} className="ingredient-row">
                   <span style={{ fontWeight: 500 }}>{ing.name}</span>
-                  <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{adjustAmount(ing.amount)}</span>
+                  <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{ing.amount}</span>
                 </div>
               ))}
             </div>
