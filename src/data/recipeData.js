@@ -15,7 +15,7 @@ export const categories = [
   { id: 'drinks', name: 'Напитки', icon: '🍹' }
 ];
 
-// 1000 recipes from JSON
+// 30 authentic Russian recipes from JSON
 export const recipes = recipesData;
 
 // Helper function to adjust ingredients for serving count
