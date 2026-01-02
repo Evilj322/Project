@@ -1,8 +1,8 @@
 // Vision API Service using OpenRouter
 // Handles image analysis for ingredient detection
 
-// Default API key for seamless experience (OpenRouter)
-const DEFAULT_API_KEY = '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';
+// Separate API key for vision (to avoid rate limits)
+const VISION_API_KEY = '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';
 
 // OpenRouter API Configuration
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -59,15 +59,6 @@ export const fileToBase64 = (file) => {
  * @returns {Promise<string[]>} - Array of detected ingredient names
  */
 export const analyzeImageForIngredients = async (base64Image, apiKey) => {
-  // Determine if we are in production
-  const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-
-  // If provided apiKey is empty, try to use environment variable in local dev
-  let activeKey = apiKey;
-  if (!activeKey && !isProduction) {
-    activeKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-  }
-
   const prompt = `Проанализируй это изображение холодильника или продуктов.
 Определи ВСЕ съедобные продукты, которые видишь.
 Называй продукты на русском языке простыми названиями.
@@ -79,29 +70,28 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
     'google/gemma-3-4b-it:free'
   ];
 
+  // Always use dedicated vision API key directly (bypasses server proxy to avoid rate limits)
+  const activeKey = apiKey || VISION_API_KEY;
+
   let lastError;
 
   for (const model of visionModels) {
     try {
-      let endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-      let headers = {
+      const headers = {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${activeKey}`,
         'HTTP-Referer': window.location.origin,
         'X-Title': 'AI Chef Recipe App'
       };
-
-      if (isProduction) {
-        endpoint = '/api/generate';
-        headers = { 'Content-Type': 'application/json' };
-      } else if (activeKey) {
-        headers['Authorization'] = `Bearer ${activeKey}`;
-      }
 
       console.log(`Trying vision model: ${model}`);
 
       // Add 15 second timeout to prevent endless loading
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      // Direct call to OpenRouter API with dedicated vision key
+      const endpoint = 'https://openrouter.ai/api/v1/chat/completions';
 
       const response = await fetch(endpoint, {
         method: 'POST',
