@@ -27,7 +27,14 @@ export default async function handler(req, res) {
 
     // Using Xiaomi MiMo-V2-Flash - free model with 262K context
     const backupModels = [
-        'xiaomi/mimo-v2-flash:free', // Primary - Xiaomi free model
+        'xiaomi/mimo-v2-flash:free', // Primary - Xiaomi free model for text
+    ];
+
+    // Vision-capable free models (for image processing)
+    const visionModels = [
+        'qwen/qwen2.5-vl-32b-instruct:free', // Qwen Vision-Language
+        'meta-llama/llama-3.2-11b-vision-instruct:free', // Llama Vision
+        'google/gemma-3-27b-it:free', // Gemma 3 multimodal
     ];
 
     // Check if the request involves images
@@ -35,15 +42,7 @@ export default async function handler(req, res) {
         Array.isArray(m.content) && m.content.some(c => c.type === 'image_url')
     );
 
-    let availableModels = backupModels;
-    if (hasImages) {
-        // Filter only vision-capable models if images are present
-        // Currently only Gemini supports vision in our list
-        availableModels = backupModels.filter(m =>
-            m.toLowerCase().includes('gemini')
-        );
-        if (availableModels.length === 0) availableModels = ['google/gemini-2.0-flash-exp:free'];
-    }
+    let availableModels = hasImages ? visionModels : backupModels;
 
     // Try models sequentially until one works
     let lastError = null;
