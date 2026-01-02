@@ -1,7 +1,7 @@
 import { recipes } from './recipeData.js';
 
-// Default API key config (removed for security, uses proxy)
-const DEFAULT_API_KEY = '';
+// Default API key config (removed for security, uses proxy in prod, .env in local)
+const DEFAULT_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 
 // OpenRouter API Configuration
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
