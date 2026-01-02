@@ -3,6 +3,100 @@ import { Camera, Upload, X, Loader2, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fileToBase64, analyzeImageForIngredients } from '../services/visionApi';
 
+// Beautiful sequential cooking animation
+const CookingAnimation = () => {
+    const [step, setStep] = useState(0);
+
+    const cookingSteps = [
+        { icon: '🔍', text: 'Сканирую продукты...', color: '#4fc3f7' },
+        { icon: '🔪', text: 'Распознаю ингредиенты...', color: '#ff7043' },
+        { icon: '📝', text: 'Составляю список...', color: '#66bb6a' },
+        { icon: '✨', text: 'Почти готово!', color: '#ffca28' }
+    ];
+
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            setStep(prev => (prev + 1) % cookingSteps.length);
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const currentStep = cookingSteps[step];
+
+    return (
+        <div className="analyzing-overlay">
+            <div className="cooking-animation-container">
+                {/* Animated background particles */}
+                <div className="particles-container">
+                    {[...Array(6)].map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className="particle"
+                            animate={{
+                                y: [-20, -60],
+                                x: [(i - 2.5) * 15, (i - 2.5) * 20],
+                                opacity: [0, 0.6, 0],
+                                scale: [0.5, 1.2]
+                            }}
+                            transition={{
+                                repeat: Infinity,
+                                duration: 2,
+                                delay: i * 0.3,
+                                ease: "easeOut"
+                            }}
+                            style={{
+                                background: currentStep.color,
+                                boxShadow: `0 0 10px ${currentStep.color}`
+                            }}
+                        />
+                    ))}
+                </div>
+
+                {/* Main icon with animation */}
+                <motion.div
+                    key={step}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    exit={{ scale: 0, rotate: 180 }}
+                    transition={{ type: "spring", duration: 0.5 }}
+                    className="cooking-icon"
+                    style={{
+                        fontSize: 56,
+                        filter: `drop-shadow(0 0 20px ${currentStep.color})`
+                    }}
+                >
+                    {currentStep.icon}
+                </motion.div>
+
+                {/* Step text */}
+                <motion.p
+                    key={`text-${step}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="cooking-text"
+                    style={{ color: currentStep.color }}
+                >
+                    {currentStep.text}
+                </motion.p>
+
+                {/* Progress dots */}
+                <div className="progress-dots">
+                    {cookingSteps.map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className="dot"
+                            animate={{
+                                scale: i === step ? 1.3 : 1,
+                                background: i === step ? currentStep.color : 'rgba(255,255,255,0.3)'
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ImageUploader = ({ onIngredientsDetected, apiKey, disabled }) => {
     const [preview, setPreview] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -42,9 +136,9 @@ const ImageUploader = ({ onIngredientsDetected, apiKey, disabled }) => {
         } catch (err) {
             console.error('Analysis failed:', err);
             if (err.message === 'NO_API_KEY') {
-                setError('Для анализа фото требуется API ключ. Введите его в настройках.');
+                setError('Для анализа фото требуется API ключ.');
             } else {
-                setError(`Ошибка анализа: ${err.message}`);
+                setError(`Ошибка: ${err.message}`);
             }
         } finally {
             setIsAnalyzing(false);
@@ -123,12 +217,7 @@ const ImageUploader = ({ onIngredientsDetected, apiKey, disabled }) => {
                     >
                         <img src={preview} alt="Preview" className="image-preview" />
 
-                        {isAnalyzing && (
-                            <div className="analyzing-overlay">
-                                <Loader2 size={40} className="spin-animation" />
-                                <span>Анализирую продукты...</span>
-                            </div>
-                        )}
+                        {isAnalyzing && <CookingAnimation />}
 
                         <button
                             className="clear-image-btn"
