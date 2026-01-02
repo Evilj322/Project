@@ -553,9 +553,19 @@ const App = () => {
     }
   };
 
-  // Handle detected ingredients from image
+  // Handle detected ingredients from image - with safety checks
   const handleIngredientsDetected = (ingredients) => {
-    setDetectedIngredients(ingredients);
+    try {
+      if (ingredients && Array.isArray(ingredients)) {
+        setDetectedIngredients(ingredients);
+      } else {
+        console.warn('Invalid ingredients received:', ingredients);
+        setDetectedIngredients([]);
+      }
+    } catch (e) {
+      console.error('Error handling ingredients:', e);
+      setDetectedIngredients([]);
+    }
   };
 
   // Confirm detected ingredients and generate recipes
