@@ -10,7 +10,14 @@ export default async function handler(req, res) {
     }
 
     const { messages, model, temperature, max_tokens } = req.body;
-    const apiKey = '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';
+
+    // Use environment variable to prevent key leakage and blocking
+    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+        console.error('OPENROUTER_API_KEY is not set in environment variables');
+        return res.status(500).json({ error: 'Server configuration error. Please check logs.' });
+    }
 
     try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {

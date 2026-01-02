@@ -1,7 +1,7 @@
 import { recipes } from './recipeData.js';
 
-// Default API key for seamless experience (OpenRouter)
-const DEFAULT_API_KEY = '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';
+// Default API key config (removed for security, uses proxy)
+const DEFAULT_API_KEY = '';
 
 // OpenRouter API Configuration
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
