@@ -34,9 +34,12 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
-    // Vision-capable models EXCLUSIVELY - Nemotron ONLY as per user mandate
+    // Vision-capable models - multiple reliable options
     const visionModels = [
-        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-pro-1.5-exp:free',
+        'meta-llama/llama-4-maverick:free',
+        'qwen/qwen2.5-vl-72b-instruct:free'
     ];
 
     // Check if the request involves images
@@ -59,9 +62,8 @@ export default async function handler(req, res) {
             if (elapsed > 9000) break;
 
             const controller = new AbortController();
-            // Give the PRIMARY model more time (8.5s) if it's the first try
-            // Otherwise give the backup 1s (Gemini is fast)
-            const waitTime = i === 0 ? 8500 : 1000;
+            // Give each model more time for image processing (7.5s first, 5s others)
+            const waitTime = i === 0 ? 7500 : 5000;
             const timeoutId = setTimeout(() => controller.abort(), waitTime);
 
             try {

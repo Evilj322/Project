@@ -102,9 +102,14 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
 
       console.log(`Trying vision model: ${model}`);
 
+      // Add 15 second timeout to prevent endless loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: headers,
+        signal: controller.signal,
         body: JSON.stringify({
           model: model,
           messages: [
@@ -120,6 +125,8 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
           max_tokens: 1000
         })
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
