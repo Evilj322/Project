@@ -47,20 +47,15 @@ const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) =>
 );
 
 const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFavorite }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
+  <div
     className="modal-overlay"
     onClick={onClose}
+    style={{ animation: 'fadeIn 0.2s ease-out' }}
   >
-    <motion.div
-      initial={{ y: "100%" }}
-      animate={{ y: 0 }}
-      exit={{ y: "100%" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    <div
       className="modal-content"
       onClick={e => e.stopPropagation()}
+      style={{ animation: 'slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
     >
       <div className="modal-handle" />
       {recipe.image && (
@@ -126,8 +121,8 @@ const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFav
           Начать готовить
         </button>
       </div>
-    </motion.div>
-  </motion.div>
+    </div>
+  </div>
 );
 
 const ThinkingProcess = () => {
