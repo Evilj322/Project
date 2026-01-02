@@ -25,9 +25,9 @@ export default async function handler(req, res) {
     // Use dynamic referer to prevent blocking
     const referer = req.headers.origin || req.headers.referer || 'https://chef-ai-app.vercel.app';
 
-    // Use ONLY the verified working model
+    // Using Xiaomi MiMo-V2-Flash - free model with 262K context
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free', // Verified working on OpenRouter
+        'xiaomi/mimo-v2-flash:free', // Primary - Xiaomi free model
     ];
 
     // Check if the request involves images
@@ -70,6 +70,7 @@ export default async function handler(req, res) {
                         messages,
                         temperature,
                         max_tokens,
+                        route: 'fallback', // Allow OpenRouter to use alternative providers
                     }),
                     signal: controller.signal
                 });
