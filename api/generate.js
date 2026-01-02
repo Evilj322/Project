@@ -23,11 +23,11 @@ export default async function handler(req, res) {
     }
 
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free', // Primary: Fast
-        'liquid/lfm-40b:free', // Secondary: High Availability
-        'deepseek/deepseek-r1-distill-llama-70b:free', // Smart Fallback
-        'meta-llama/llama-3.3-70b-instruct:free', // Reliable Backup
-        'google/gemini-2.0-flash-thinking-exp:free' // Last Resort
+        'google/gemini-2.0-flash-exp:free', // Primary
+        'deepseek/deepseek-r1-distill-llama-70b:free', // Secondary
+        'meta-llama/llama-3.3-70b-instruct:free', // Reliable
+        'qwen/qwen-2.5-vl-72b-instruct:free', // Vision Backup
+        'meta-llama/llama-3-8b-instruct:free' // Last resort
     ];
 
     // Check if the request involves images
