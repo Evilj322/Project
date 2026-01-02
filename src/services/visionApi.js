@@ -109,7 +109,7 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
-        // Don't specify model - server will pick the right vision model
+        model: 'nvidia/nemotron-nano-12b-v2-vl:free', // Явное указание модели
         messages: [
           {
             role: 'user',
@@ -119,8 +119,8 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
             ]
           }
         ],
-        temperature: 0.2,
-        max_tokens: 500
+        temperature: 0.1,
+        max_tokens: 1000
       })
     });
 
