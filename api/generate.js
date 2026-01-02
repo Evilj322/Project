@@ -36,12 +36,10 @@ export default async function handler(req, res) {
 
     // Vision-capable models
     const visionModels = [
-        'mistralai/mistral-small-3.1-24b-instruct:free', // User preferred model
-        'google/gemini-2.0-flash-exp:free',
-        'meta-llama/llama-3.2-11b-vision-instruct:free', // Very reliable free vision
-        'qwen/qwen-2-vl-72b-instruct:free',
-        'google/gemini-pro-1.5-exp:free',
-        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'google/gemini-2.0-flash-exp:free',        // Very fast
+        'google/gemini-flash-1.5:free',           // Most stable fallback
+        'mistralai/mistral-small-3.1-24b-instruct:free',
+        'meta-llama/llama-3.2-11b-vision-instruct:free',
     ];
 
     // Check if the request involves images
@@ -57,8 +55,9 @@ export default async function handler(req, res) {
     try {
         for (const currentModel of availableModels) {
             const controller = new AbortController();
-            // Increased timeout for vision tasks - some images are large
-            const timeoutId = setTimeout(() => controller.abort(), 50000);
+            // IMPORTANT: Vercel Hobby limit is 10s. 
+            // We give each model ~4s to respond so we can try at least 2 models.
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
 
             try {
                 process.stdout.write(`Attempting ${currentModel} (Images: ${hasImages})\n`);
