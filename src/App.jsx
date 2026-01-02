@@ -481,32 +481,29 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
-    // Цель — получить минимум 7-8 рецептов. Запрашиваем 10 для запаса.
     const targetCount = 10;
     const currentTitles = [];
 
     try {
-      // Работаем последовательно-параллельно для стабильности
       const indexes = Array.from({ length: targetCount }, (_, i) => i);
 
-      const promises = indexes.map(async (i) => {
+      const results = await Promise.all(indexes.map(async (i) => {
         try {
-          // Увеличиваем интервал между запросами до 2.5 сек для надежности
           await new Promise(r => setTimeout(r, i * 2500));
 
           const recipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
 
           if (recipe && recipe.title) {
             setAiRecipes(prev => {
-              const isDuplicate = prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase());
-              if (isDuplicate) return prev;
+              if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
               currentTitles.push(recipe.title);
               return [...prev, recipe];
             });
+            return true; // Успех
           }
+          return false;
         } catch (err) {
           console.error(`Ошибка в запросе ${i}:`, err);
-          // Ретрай через паузу
           try {
             await new Promise(r => setTimeout(r, 5000));
             const retry = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
@@ -516,21 +513,21 @@ const App = () => {
                 currentTitles.push(retry.title);
                 return [...prev, retry];
               });
+              return true;
             }
           } catch (retryErr) { }
+          return false;
         }
-      });
+      }));
 
-      await Promise.all(promises);
+      const foundCount = results.filter(r => r === true).length;
 
-      if (aiRecipes.length === 0) {
+      if (foundCount === 0) {
         throw new Error("Не удалось получить рецепты. Попробуйте уточнить продукты.");
       }
     } catch (e) {
       console.error("Critical AI Error:", e);
-      if (aiRecipes.length === 0) {
-        setError("Ошибка связи с Шефом. Попробуйте позже.");
-      }
+      setError(e.message || "Ошибка связи с Шефом. Попробуйте позже.");
     } finally {
       setIsGenerating(false);
     }
@@ -694,6 +691,7 @@ const App = () => {
                       ingredients={detectedIngredients}
                       onUpdate={setDetectedIngredients}
                       onConfirm={handleConfirmDetectedIngredients}
+                      disabled={isGenerating}
                     />
                   )}
                 </motion.div>

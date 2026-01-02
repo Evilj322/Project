@@ -113,9 +113,14 @@ const DetectedIngredients = ({ ingredients, onUpdate, onConfirm }) => {
                 </div>
             </div>
 
-            <button className="confirm-ingredients-btn" onClick={onConfirm}>
+            <button
+                className="confirm-ingredients-btn"
+                onClick={onConfirm}
+                disabled={disabled}
+                style={{ opacity: disabled ? 0.6 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
+            >
                 <Check size={20} />
-                Использовать эти продукты
+                {disabled ? 'Магия в процессе...' : 'Использовать эти продукты'}
             </button>
         </motion.div>
     );
