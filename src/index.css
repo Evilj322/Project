@@ -322,7 +322,8 @@ h3 {
 /* Bottom Navigation */
 .bottom-nav {
   position: fixed;
-  bottom: 24px;
+  /* Safe area for iPhone home indicator */
+  bottom: max(24px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 40px);
