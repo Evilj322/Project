@@ -29,11 +29,25 @@ export default async function handler(req, res) {
         'microsoft/phi-3-medium-128k-instruct:free'
     ];
 
+    // Check if the request involves images
+    const hasImages = Array.isArray(messages) && messages.some(m =>
+        Array.isArray(m.content) && m.content.some(c => c.type === 'image_url')
+    );
+
+    let availableModels = backupModels;
+    if (hasImages) {
+        // Filter only vision-capable models if images are present
+        availableModels = backupModels.filter(m =>
+            m.toLowerCase().includes('gemini') || m.toLowerCase().includes('vision')
+        );
+        if (availableModels.length === 0) availableModels = [backupModels[0]]; // Fallback to Gemini if nothing matches
+    }
+
     // Try models sequentially until one works
     let lastError = null;
 
     try { // Outer try block for general server errors
-        for (const currentModel of backupModels) {
+        for (const currentModel of availableModels) {
             try {
                 console.log(`Trying model: ${currentModel}`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
