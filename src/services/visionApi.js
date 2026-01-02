@@ -76,9 +76,9 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
 
   // Vision-capable models to try (free tier)
   const visionModels = [
+    'google/gemma-3-4b-it:free',
     'google/gemini-2.0-flash-exp:free',
     'google/gemini-pro-1.5-exp:free',
-    'meta-llama/llama-4-maverick:free',
     'qwen/qwen2.5-vl-72b-instruct:free'
   ];
 
