@@ -30,9 +30,9 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free', // Primary - Xiaomi free model for text
     ];
 
-    // Vision-capable models - using Xiaomi for both text and images
+    // Vision-capable models - using NVIDIA Nemotron for image analysis
     const visionModels = [
-        'xiaomi/mimo-v2-flash:free', // Xiaomi free model for vision
+        'nvidia/nemotron-nano-12b-v2-vl:free', // NVIDIA Vision-Language model
     ];
 
     // Check if the request involves images
