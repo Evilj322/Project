@@ -46,84 +46,148 @@ const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) =>
   </div>
 );
 
-const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFavorite }) => (
-  <div
-    className="modal-overlay"
-    onClick={onClose}
-    style={{ animation: 'fadeIn 0.2s ease-out' }}
-  >
+const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFavorite }) => {
+  const [servings, setServings] = useState(recipe.servings || 4);
+
+  // Calculate ratio for adjusting ingredients
+  const ratio = servings / (recipe.servings || 4);
+
+  const adjustAmount = (amount) => {
+    const match = amount.match(/^([\d.,]+)\s*(.*)$/);
+    if (match) {
+      const num = parseFloat(match[1].replace(',', '.'));
+      const adjusted = Math.round(num * ratio * 10) / 10;
+      return `${adjusted}${match[2]}`;
+    }
+    return amount;
+  };
+
+  const adjustedCalories = Math.round((recipe.calories || 0) * ratio);
+  const adjustedMacros = {
+    protein: Math.round((recipe.macros?.protein || 0) * ratio),
+    fats: Math.round((recipe.macros?.fats || 0) * ratio),
+    carbs: Math.round((recipe.macros?.carbs || 0) * ratio)
+  };
+
+  return (
     <div
-      className="modal-content"
-      onClick={e => e.stopPropagation()}
-      style={{ animation: 'slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+      className="modal-overlay"
+      onClick={onClose}
+      style={{ animation: 'fadeIn 0.2s ease-out' }}
     >
-      <div className="modal-handle" />
-      {recipe.image && (
-        <img src={recipe.image} alt={recipe.title} className="modal-image" />
-      )}
-      <div className="modal-body">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <span className="recipe-tag">{categories.find(c => c.id === recipe.category)?.name}</span>
-            <h2 style={{ fontSize: 28, margin: '8px 0 0 0', fontWeight: 800 }}>{recipe.title}</h2>
+      <div
+        className="modal-content"
+        onClick={e => e.stopPropagation()}
+        style={{ animation: 'slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+      >
+        <div className="modal-handle" />
+        {recipe.image && (
+          <img src={recipe.image} alt={recipe.title} className="modal-image" />
+        )}
+        <div className="modal-body">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <span className="recipe-tag">{categories.find(c => c.id === recipe.category)?.name}</span>
+              <h2 style={{ fontSize: 28, margin: '8px 0 0 0', fontWeight: 800 }}>{recipe.title}</h2>
+            </div>
+            <button className="close-btn" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', width: 40, height: 40, borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={24} />
+            </button>
           </div>
-          <button className="close-btn" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', width: 40, height: 40, borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <X size={24} />
+
+          {/* Portion Counter */}
+          <div className="portion-counter" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            margin: '20px 0',
+            padding: '16px',
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 12
+          }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Порций:</span>
+            <button
+              onClick={() => setServings(Math.max(1, servings - 1))}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'var(--primary)', border: 'none',
+                color: 'white', fontSize: 20, fontWeight: 'bold',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >−</button>
+            <span style={{
+              fontSize: 24, fontWeight: 700, minWidth: 40, textAlign: 'center',
+              color: 'var(--primary)'
+            }}>{servings}</span>
+            <button
+              onClick={() => setServings(servings + 1)}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'var(--primary)', border: 'none',
+                color: 'white', fontSize: 20, fontWeight: 'bold',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >+</button>
+          </div>
+
+          <div className="macros-container">
+            <div className="macro-item">
+              <span className="macro-value">{adjustedMacros.protein}г</span>
+              <span className="macro-label">Белки</span>
+            </div>
+            <div className="macro-item">
+              <span className="macro-value">{adjustedMacros.fats}г</span>
+              <span className="macro-label">Жиры</span>
+            </div>
+            <div className="macro-item">
+              <span className="macro-value">{adjustedMacros.carbs}г</span>
+              <span className="macro-label">Углев.</span>
+            </div>
+            <div className="macro-item">
+              <span className="macro-value">{adjustedCalories}</span>
+              <span className="macro-label">ккал</span>
+            </div>
+          </div>
+
+          {recipe.description && (
+            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 24, padding: '0 4px' }}>
+              "{recipe.description}"
+            </p>
+          )}
+
+          <div style={{ marginBottom: 32 }}>
+            <h4 style={{ fontSize: 18, color: 'var(--primary)', marginBottom: 16 }}>Ингредиенты</h4>
+            <div className="ingredients-detailed">
+              {recipe.ingredients.map((ing, i) => (
+                <div key={i} className="ingredient-row">
+                  <span style={{ fontWeight: 500 }}>{ing.name}</span>
+                  <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{adjustAmount(ing.amount)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 32 }}>
+            <h4 style={{ fontSize: 18, color: 'var(--primary)', marginBottom: 16 }}>Инструкция</h4>
+            <div className="instructions-stepper">
+              {recipe.instructions.map((step, i) => (
+                <div key={i} className="step-row">
+                  <div className="step-number">{i + 1}</div>
+                  <div className="step-text">{step}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button className="generate-btn" onClick={() => onStartCooking(recipe)}>
+            Начать готовить
           </button>
         </div>
-
-        <div className="macros-container">
-          <div className="macro-item">
-            <span className="macro-value">{recipe.macros.protein}г</span>
-            <span className="macro-label">Белки</span>
-          </div>
-          <div className="macro-item">
-            <span className="macro-value">{recipe.macros.fats}г</span>
-            <span className="macro-label">Жиры</span>
-          </div>
-          <div className="macro-item">
-            <span className="macro-value">{recipe.macros.carbs}г</span>
-            <span className="macro-label">Углев.</span>
-          </div>
-        </div>
-
-        {recipe.description && (
-          <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 24, padding: '0 4px' }}>
-            "{recipe.description}"
-          </p>
-        )}
-
-        <div style={{ marginBottom: 32 }}>
-          <h4 style={{ fontSize: 18, color: 'var(--primary)', marginBottom: 16 }}>Ингредиенты</h4>
-          <div className="ingredients-detailed">
-            {recipe.ingredients.map((ing, i) => (
-              <div key={i} className="ingredient-row">
-                <span style={{ fontWeight: 500 }}>{ing.name}</span>
-                <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{ing.amount}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 32 }}>
-          <h4 style={{ fontSize: 18, color: 'var(--primary)', marginBottom: 16 }}>Инструкция</h4>
-          <div className="instructions-stepper">
-            {recipe.instructions.map((step, i) => (
-              <div key={i} className="step-row">
-                <div className="step-number">{i + 1}</div>
-                <div className="step-text">{step}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <button className="generate-btn" onClick={() => onStartCooking(recipe)}>
-          Начать готовить
-        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const CookingMode = ({ recipe, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
