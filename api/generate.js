@@ -23,11 +23,15 @@ export default async function handler(req, res) {
     }
 
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free', // Primary
-        'deepseek/deepseek-r1-distill-llama-70b:free', // Secondary
-        'meta-llama/llama-3.3-70b-instruct:free', // Reliable
-        'qwen/qwen-2.5-vl-72b-instruct:free', // Vision Backup
-        'meta-llama/llama-3-8b-instruct:free' // Last resort
+        'google/gemini-2.0-flash-exp:free', // Google
+        'deepseek/deepseek-r1-distill-llama-70b:free', // DeepSeek
+        'meta-llama/llama-3.3-70b-instruct:free', // Meta High Tier
+        'liquid/lfm-40b:free', // Liquid (Very Stable)
+        'openchat/openchat-7b:free', // OpenChat (Often ignored but works)
+        'mistralai/mistral-7b-instruct:free', // Mistral
+        'microsoft/phi-3-mini-128k-instruct:free', // Microsoft
+        'huggingfaceh4/zephyr-7b-beta:free', // Zephyr
+        'qwen/qwen-2.5-vl-72b-instruct:free', // Qwen VL
     ];
 
     // Check if the request involves images
