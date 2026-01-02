@@ -34,13 +34,10 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
-    // Vision-capable models ONLY - Verified for image support
+    // Vision-capable models ONLY - Prioritizing Nemotron as requested
     const visionModels = [
-        'nvidia/nemotron-nano-12b-v2-vl:free',    // Priority model requested by user
-        'google/gemini-2.0-flash-exp:free',       // Extremely fast fallback
-        'google/gemini-flash-1.5:free',
-        'qwen/qwen2.5-vl-72b-instruct:free',
-        'meta-llama/llama-3.2-11b-vision-instruct:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',    // Primary
+        'google/gemini-flash-1.5:free',           // Fail-safe backup
     ];
 
     // Check if the request involves images
@@ -55,16 +52,21 @@ export default async function handler(req, res) {
     const startTime = Date.now();
 
     try {
-        for (const currentModel of availableModels) {
+        for (let i = 0; i < availableModels.length; i++) {
+            const currentModel = availableModels[i];
+
             // Respect Vercel's 10s limit
             const elapsed = Date.now() - startTime;
-            if (elapsed > 8800) break;
+            if (elapsed > 9000) break;
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            // Give the PRIMARY model more time (8.5s) if it's the first try
+            // Otherwise give the backup 1s (Gemini is fast)
+            const waitTime = i === 0 ? 8500 : 1000;
+            const timeoutId = setTimeout(() => controller.abort(), waitTime);
 
             try {
-                process.stdout.write(`Vercel Vision Proxy: Trying ${currentModel}\n`);
+                process.stdout.write(`Vercel Proxy: Calling ${currentModel}\n`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -90,28 +92,27 @@ export default async function handler(req, res) {
                     return res.status(200).json(data);
                 }
 
-                // If specialized error about image support, try next immediately
+                // If specialized error, record and try backup
                 const errorMsg = data?.error?.message || '';
+                lastError = { status: response.status, message: errorMsg || `Ошибка API (${currentModel})` };
+
                 if (errorMsg.toLowerCase().includes('image input') || errorMsg.toLowerCase().includes('multimodal')) {
-                    console.warn(`Model ${currentModel} doesn't support images, skipping...`);
                     continue;
                 }
 
-                lastError = { status: response.status, message: errorMsg || `Ошибка API (${currentModel})` };
-
             } catch (error) {
                 clearTimeout(timeoutId);
-                console.error(`Vercel Vision Error (${currentModel}):`, error);
-                lastError = { status: 504, message: `Тайм-аут модели ${currentModel}` };
+                console.error(`Vercel Proxy Error (${currentModel}):`, error);
+                lastError = { status: 504, message: `Модель ${currentModel} не ответила вовремя.` };
             }
         }
 
         // Return error in structured format for client
         const finalStatus = lastError?.status && lastError.status !== 200 ? lastError.status : 503;
         return res.status(finalStatus).json({
-            error: { message: lastError?.message || 'Все Vision-модели перегружены. Попробуйте снова.' }
+            error: { message: lastError?.message || 'Не удалось связаться с Шефом. Попробуйте снова через минуту.' }
         });
     } catch (e) {
-        res.status(500).json({ error: { message: e.message || 'Системная ошибка сервера' } });
+        res.status(500).json({ error: { message: 'Критическая ошибка сервера. Проверьте соединение.' } });
     }
 }
