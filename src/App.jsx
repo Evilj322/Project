@@ -255,69 +255,96 @@ const CookingMode = ({ recipe, onClose }) => {
 const ThinkingProcess = () => {
   const [step, setStep] = useState(0);
   const steps = [
-    "Шеф достает книгу рецептов...",
-    "Изучает ваши ингредиенты...",
-    "Записывает идеи новых блюд...",
-    "Разогревает сковородки...",
-    "Добавляет секретный ингредиент...",
-    "Финальные штрихи..."
+    "Шеф достает книгу...",
+    "Изучает ваши продукты...",
+    "Записывает идеи...",
+    "Нарезает продукты...",
+    "Разогревает соус...",
+    "Почти готово!"
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStep(prev => (prev < steps.length - 1 ? prev + 1 : 2));
-    }, 2000);
+      setStep(prev => (prev + 1) % steps.length);
+    }, 2500);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="thinking-container" style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
-      <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 30px' }}>
-        {/* Анимированный Повар-Писатель */}
+    <div className="thinking-container" style={{
+      textAlign: 'center',
+      padding: '40px 20px',
+      background: 'rgba(255,255,255,0.02)',
+      borderRadius: 32,
+      border: '1px solid rgba(255,255,255,0.05)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 30px' }}>
+        {/* Персонаж Шеф (Колпак + Лицо) */}
         <motion.div
-          animate={{ y: [0, -5, 0], rotate: [-2, 2, -2] }}
-          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          style={{ position: 'absolute', top: 0, left: 10, color: 'var(--primary)' }}
+          animate={{
+            y: [0, -10, 0],
+            rotate: [0, -2, 2, 0]
+          }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 2 }}
         >
-          <ChefHat size={60} />
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <ChefHat size={50} color="var(--primary)" style={{ marginBottom: -15, zIndex: 3 }} />
+            <div style={{
+              width: 50,
+              height: 50,
+              background: 'var(--primary)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 20px rgba(255, 107, 107, 0.4)'
+            }}>
+              <Search size={24} color="#fff" />
+            </div>
+
+            <motion.div
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              style={{ position: 'absolute', top: -10, right: -15 }}
+            >
+              <Zap size={24} color="#ffeb3b" />
+            </motion.div>
+          </div>
         </motion.div>
 
+        {/* Рука с ручкой (имитация письма) */}
         <motion.div
-          animate={{ x: [0, 5, 0], y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-          style={{ position: 'absolute', bottom: 10, right: 10, color: '#fff' }}
+          animate={{
+            x: [-15, 15, -15],
+            y: [20, 25, 20],
+            rotate: [0, 15, 0]
+          }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+          style={{ position: 'absolute', bottom: 10, right: 0, color: '#fff' }}
         >
-          <motion.div
-            animate={{ rotate: [0, 10, 0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 0.5 }}
-          >
-            <Type size={32} />
-          </motion.div>
+          <Type size={32} />
         </motion.div>
       </div>
 
       <motion.p
         key={step}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        style={{ fontSize: 20, fontWeight: 500, color: '#fff', marginBottom: 20 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ fontSize: 20, fontWeight: 500, color: '#fff', marginBottom: 25 }}
       >
         {steps[step]}
       </motion.p>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-        {[0, 1, 2, 3].map(i => (
-          <motion.div
-            key={i}
-            animate={{
-              scale: [1, 1.4, 1],
-              opacity: [0.2, 1, 0.2],
-              backgroundColor: ['var(--primary)', '#fff', 'var(--primary)']
-            }}
-            transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
-            style={{ width: 10, height: 10, borderRadius: '50%' }}
-          />
-        ))}
+      {/* Прогресс-бар для ожидания 8 рецептов */}
+      <div style={{ width: '200px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: 2, margin: '0 auto' }}>
+        <motion.div
+          animate={{ width: ['0%', '100%'] }}
+          transition={{ duration: 15, ease: "linear", repeat: Infinity }}
+          style={{ height: '100%', background: 'var(--primary)', borderRadius: 2 }}
+        />
       </div>
     </div>
   );
@@ -417,57 +444,55 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
-    const recipeCount = 8; // Гарантируем 8 рецептов
-    let foundCount = 0;
+    // Цель — получить минимум 7-8 рецептов. Запрашиваем 10 для запаса.
+    const targetCount = 10;
     const currentTitles = [];
 
     try {
-      // Запускаем запросы. Чтобы избежать дублей и ошибок API, делаем их с разбросом.
-      const indexes = Array.from({ length: recipeCount }, (_, i) => i);
+      // Работаем последовательно-параллельно для стабильности
+      const indexes = Array.from({ length: targetCount }, (_, i) => i);
 
       const promises = indexes.map(async (i) => {
         try {
-          // Задержка между запросами для стабильности API
-          await new Promise(r => setTimeout(r, i * 2000));
+          // Увеличиваем интервал между запросами до 2.5 сек для надежности
+          await new Promise(r => setTimeout(r, i * 2500));
 
-          // Передаем уже найденные названия, чтобы ИИ не повторялся
           const recipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
 
           if (recipe && recipe.title) {
             setAiRecipes(prev => {
-              if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
+              const isDuplicate = prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase());
+              if (isDuplicate) return prev;
               currentTitles.push(recipe.title);
               return [...prev, recipe];
             });
-            foundCount++;
           }
         } catch (err) {
-          console.warn(`Поток ${i} не справился:`, err);
-          // Попробуем еще раз этот же индекс через паузу (простой ретрай)
+          console.error(`Ошибка в запросе ${i}:`, err);
+          // Ретрай через паузу
           try {
             await new Promise(r => setTimeout(r, 5000));
-            const retryRecipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
-            if (retryRecipe && retryRecipe.title) {
+            const retry = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
+            if (retry && retry.title) {
               setAiRecipes(prev => {
-                if (prev.some(r => r.title.toLowerCase() === retryRecipe.title.toLowerCase())) return prev;
-                currentTitles.push(retryRecipe.title);
-                return [...prev, retryRecipe];
+                if (prev.some(r => r.title.toLowerCase() === retry.title.toLowerCase())) return prev;
+                currentTitles.push(retry.title);
+                return [...prev, retry];
               });
-              foundCount++;
             }
-          } catch (e) { }
+          } catch (retryErr) { }
         }
       });
 
       await Promise.all(promises);
 
-      if (foundCount < 3 && aiRecipes.length < 3) {
-        throw new Error("Не удалось собрать меню. Попробуйте обновить страницу или изменить список продуктов.");
+      if (aiRecipes.length === 0) {
+        throw new Error("Не удалось получить рецепты. Попробуйте уточнить продукты.");
       }
     } catch (e) {
-      console.error("AI Generation failed", e);
+      console.error("Critical AI Error:", e);
       if (aiRecipes.length === 0) {
-        setError(`Ошибка нейросети: ${e.message}. Попробуйте позже.`);
+        setError("Ошибка связи с Шефом. Попробуйте позже.");
       }
     } finally {
       setIsGenerating(false);
