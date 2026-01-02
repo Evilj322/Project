@@ -1,6 +1,6 @@
 /**
- * Recipe Scraper for food.ru
- * This script fetches recipes and saves them to a JSON file
+ * Generate high-quality unique Russian recipes
+ * Based on authentic Russian cuisine
  */
 
 import fs from 'fs';
@@ -10,356 +10,832 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Since we can't actually scrape food.ru (it's dynamic/protected), 
-// we'll generate realistic Russian recipes based on real categories
-
-const categories = [
-    { id: 'breakfast', name: 'Завтрак', icon: '🍳' },
-    { id: 'lunch', name: 'Обед', icon: '🍲' },
-    { id: 'dinner', name: 'Ужин', icon: '🍽️' },
-    { id: 'snacks', name: 'Закуски', icon: '🥪' },
-    { id: 'desserts', name: 'Десерты', icon: '🍰' },
-    { id: 'salads', name: 'Салаты', icon: '🥗' },
-    { id: 'soups', name: 'Супы', icon: '🍜' },
-    { id: 'main', name: 'Вторые блюда', icon: '🍖' },
-    { id: 'baking', name: 'Выпечка', icon: '🥐' },
-    { id: 'drinks', name: 'Напитки', icon: '🍹' }
-];
-
-// Realistic Russian recipe database
-const recipeTemplates = {
-    breakfast: [
-        { title: 'Сырники со сметаной', time: '25 мин', difficulty: 'Легко', calories: 320, servings: 4 },
-        { title: 'Овсяная каша с ягодами', time: '15 мин', difficulty: 'Легко', calories: 280, servings: 2 },
-        { title: 'Блины на молоке', time: '40 мин', difficulty: 'Легко', calories: 250, servings: 6 },
-        { title: 'Омлет с сыром и зеленью', time: '10 мин', difficulty: 'Легко', calories: 280, servings: 2 },
-        { title: 'Каша рисовая молочная', time: '30 мин', difficulty: 'Легко', calories: 260, servings: 4 },
-        { title: 'Творожная запеканка', time: '50 мин', difficulty: 'Средне', calories: 340, servings: 6 },
-        { title: 'Яичница с беконом', time: '10 мин', difficulty: 'Легко', calories: 380, servings: 2 },
-        { title: 'Манная каша', time: '15 мин', difficulty: 'Легко', calories: 220, servings: 2 },
-        { title: 'Гренки с яйцом', time: '15 мин', difficulty: 'Легко', calories: 290, servings: 2 },
-        { title: 'Оладьи на кефире', time: '30 мин', difficulty: 'Легко', calories: 310, servings: 4 },
-    ],
-    lunch: [
-        { title: 'Борщ украинский', time: '2 ч', difficulty: 'Средне', calories: 350, servings: 8 },
-        { title: 'Щи из свежей капусты', time: '1.5 ч', difficulty: 'Средне', calories: 280, servings: 6 },
-        { title: 'Солянка мясная сборная', time: '1.5 ч', difficulty: 'Средне', calories: 420, servings: 6 },
-        { title: 'Рассольник с перловкой', time: '1 ч', difficulty: 'Средне', calories: 300, servings: 6 },
-        { title: 'Куриный суп с лапшой', time: '40 мин', difficulty: 'Легко', calories: 260, servings: 4 },
-        { title: 'Гороховый суп с копчёностями', time: '1.5 ч', difficulty: 'Средне', calories: 380, servings: 6 },
-        { title: 'Харчо по-грузински', time: '1 ч', difficulty: 'Средне', calories: 350, servings: 4 },
-        { title: 'Уха из сёмги', time: '45 мин', difficulty: 'Средне', calories: 280, servings: 4 },
-        { title: 'Грибной крем-суп', time: '35 мин', difficulty: 'Легко', calories: 240, servings: 4 },
-        { title: 'Лагман узбекский', time: '1.5 ч', difficulty: 'Сложно', calories: 450, servings: 4 },
-    ],
-    dinner: [
-        { title: 'Котлеты домашние', time: '40 мин', difficulty: 'Средне', calories: 320, servings: 6 },
-        { title: 'Пельмени сибирские', time: '2 ч', difficulty: 'Сложно', calories: 380, servings: 6 },
-        { title: 'Голубцы в томатном соусе', time: '1.5 ч', difficulty: 'Средне', calories: 340, servings: 8 },
-        { title: 'Плов узбекский', time: '1.5 ч', difficulty: 'Средне', calories: 480, servings: 6 },
-        { title: 'Жаркое по-домашнему', time: '1 ч', difficulty: 'Средне', calories: 420, servings: 4 },
-        { title: 'Гуляш из говядины', time: '1.5 ч', difficulty: 'Средне', calories: 380, servings: 4 },
-        { title: 'Курица запечённая с картофелем', time: '1 ч', difficulty: 'Легко', calories: 450, servings: 4 },
-        { title: 'Рыба под маринадом', time: '50 мин', difficulty: 'Средне', calories: 280, servings: 4 },
-        { title: 'Бефстроганов', time: '30 мин', difficulty: 'Средне', calories: 350, servings: 4 },
-        { title: 'Шашлык из свинины', time: '4 ч', difficulty: 'Средне', calories: 420, servings: 8 },
-    ],
-    salads: [
-        { title: 'Оливье классический', time: '40 мин', difficulty: 'Легко', calories: 280, servings: 8 },
-        { title: 'Сельдь под шубой', time: '45 мин', difficulty: 'Легко', calories: 320, servings: 8 },
-        { title: 'Мимоза', time: '40 мин', difficulty: 'Легко', calories: 300, servings: 6 },
-        { title: 'Винегрет', time: '40 мин', difficulty: 'Легко', calories: 180, servings: 6 },
-        { title: 'Цезарь с курицей', time: '25 мин', difficulty: 'Легко', calories: 350, servings: 4 },
-        { title: 'Греческий салат', time: '15 мин', difficulty: 'Легко', calories: 220, servings: 4 },
-        { title: 'Крабовый салат', time: '20 мин', difficulty: 'Легко', calories: 260, servings: 4 },
-        { title: 'Салат с тунцом', time: '15 мин', difficulty: 'Легко', calories: 240, servings: 4 },
-        { title: 'Капустный салат', time: '10 мин', difficulty: 'Легко', calories: 120, servings: 4 },
-        { title: 'Тёплый салат с курицей', time: '25 мин', difficulty: 'Средне', calories: 380, servings: 4 },
-    ],
-    desserts: [
-        { title: 'Медовик', time: '2 ч', difficulty: 'Средне', calories: 380, servings: 12 },
-        { title: 'Наполеон', time: '3 ч', difficulty: 'Сложно', calories: 420, servings: 12 },
-        { title: 'Тирамису', time: '40 мин', difficulty: 'Средне', calories: 350, servings: 8 },
-        { title: 'Чизкейк Нью-Йорк', time: '1.5 ч', difficulty: 'Средне', calories: 400, servings: 10 },
-        { title: 'Панна-котта', time: '30 мин', difficulty: 'Легко', calories: 280, servings: 4 },
-        { title: 'Шоколадный фондан', time: '25 мин', difficulty: 'Средне', calories: 320, servings: 4 },
-        { title: 'Эклеры с заварным кремом', time: '1 ч', difficulty: 'Средне', calories: 290, servings: 8 },
-        { title: 'Торт Прага', time: '2 ч', difficulty: 'Средне', calories: 380, servings: 12 },
-        { title: 'Пирожное Картошка', time: '30 мин', difficulty: 'Легко', calories: 260, servings: 10 },
-        { title: 'Штрудель с яблоками', time: '1 ч', difficulty: 'Средне', calories: 280, servings: 8 },
-    ],
-    snacks: [
-        { title: 'Бутерброды с красной икрой', time: '10 мин', difficulty: 'Легко', calories: 180, servings: 6 },
-        { title: 'Тарталетки с салатом', time: '25 мин', difficulty: 'Легко', calories: 150, servings: 12 },
-        { title: 'Канапе с сёмгой', time: '15 мин', difficulty: 'Легко', calories: 120, servings: 10 },
-        { title: 'Фаршированные яйца', time: '20 мин', difficulty: 'Легко', calories: 140, servings: 8 },
-        { title: 'Рулетики из баклажанов', time: '30 мин', difficulty: 'Средне', calories: 160, servings: 8 },
-        { title: 'Брускетта с томатами', time: '15 мин', difficulty: 'Легко', calories: 140, servings: 6 },
-        { title: 'Сырные шарики', time: '20 мин', difficulty: 'Легко', calories: 180, servings: 10 },
-        { title: 'Грибы фаршированные', time: '35 мин', difficulty: 'Средне', calories: 150, servings: 8 },
-        { title: 'Чесночные гренки', time: '15 мин', difficulty: 'Легко', calories: 180, servings: 6 },
-        { title: 'Закусочные рулеты из лаваша', time: '20 мин', difficulty: 'Легко', calories: 220, servings: 8 },
-    ],
-    baking: [
-        { title: 'Пирог с яблоками', time: '1 ч', difficulty: 'Легко', calories: 280, servings: 8 },
-        { title: 'Шарлотка', time: '50 мин', difficulty: 'Легко', calories: 260, servings: 8 },
-        { title: 'Пирожки с мясом', time: '1.5 ч', difficulty: 'Средне', calories: 320, servings: 12 },
-        { title: 'Беляши домашние', time: '1 ч', difficulty: 'Средне', calories: 380, servings: 10 },
-        { title: 'Хачапури по-аджарски', time: '40 мин', difficulty: 'Средне', calories: 450, servings: 4 },
-        { title: 'Ватрушки с творогом', time: '1 ч', difficulty: 'Средне', calories: 290, servings: 8 },
-        { title: 'Кулебяка', time: '2 ч', difficulty: 'Сложно', calories: 380, servings: 10 },
-        { title: 'Круассаны', time: '4 ч', difficulty: 'Сложно', calories: 340, servings: 8 },
-        { title: 'Булочки синнабон', time: '2 ч', difficulty: 'Средне', calories: 380, servings: 9 },
-        { title: 'Пицца домашняя', time: '1 ч', difficulty: 'Средне', calories: 350, servings: 8 },
-    ],
-    soups: [
-        { title: 'Окрошка на квасе', time: '30 мин', difficulty: 'Легко', calories: 180, servings: 6 },
-        { title: 'Свекольник холодный', time: '25 мин', difficulty: 'Легко', calories: 160, servings: 4 },
-        { title: 'Суп-пюре из тыквы', time: '40 мин', difficulty: 'Легко', calories: 200, servings: 4 },
-        { title: 'Минестроне', time: '50 мин', difficulty: 'Средне', calories: 220, servings: 6 },
-        { title: 'Том Ям', time: '30 мин', difficulty: 'Средне', calories: 180, servings: 4 },
-        { title: 'Фо бо вьетнамский', time: '2 ч', difficulty: 'Сложно', calories: 280, servings: 4 },
-        { title: 'Суп с фрикадельками', time: '40 мин', difficulty: 'Легко', calories: 260, servings: 6 },
-        { title: 'Сырный суп', time: '30 мин', difficulty: 'Легко', calories: 320, servings: 4 },
-        { title: 'Щавелевый суп', time: '35 мин', difficulty: 'Легко', calories: 180, servings: 4 },
-        { title: 'Грибной суп с перловкой', time: '1 ч', difficulty: 'Средне', calories: 240, servings: 6 },
-    ],
-    main: [
-        { title: 'Макароны по-флотски', time: '30 мин', difficulty: 'Легко', calories: 380, servings: 4 },
-        { title: 'Тефтели в сметанном соусе', time: '50 мин', difficulty: 'Средне', calories: 340, servings: 6 },
-        { title: 'Куриные наггетсы', time: '40 мин', difficulty: 'Легко', calories: 320, servings: 4 },
-        { title: 'Картофельное пюре', time: '30 мин', difficulty: 'Легко', calories: 180, servings: 4 },
-        { title: 'Гречка с грибами', time: '35 мин', difficulty: 'Легко', calories: 240, servings: 4 },
-        { title: 'Рис с овощами', time: '30 мин', difficulty: 'Легко', calories: 220, servings: 4 },
-        { title: 'Паста карбонара', time: '25 мин', difficulty: 'Средне', calories: 450, servings: 4 },
-        { title: 'Лазанья', time: '1.5 ч', difficulty: 'Средне', calories: 480, servings: 8 },
-        { title: 'Ризотто с грибами', time: '40 мин', difficulty: 'Средне', calories: 380, servings: 4 },
-        { title: 'Стейк из говядины', time: '25 мин', difficulty: 'Средне', calories: 380, servings: 2 },
-    ],
-    drinks: [
-        { title: 'Морс клюквенный', time: '20 мин', difficulty: 'Легко', calories: 80, servings: 6 },
-        { title: 'Компот из сухофруктов', time: '40 мин', difficulty: 'Легко', calories: 90, servings: 8 },
-        { title: 'Смузи банановый', time: '5 мин', difficulty: 'Легко', calories: 150, servings: 2 },
-        { title: 'Глинтвейн', time: '20 мин', difficulty: 'Легко', calories: 180, servings: 4 },
-        { title: 'Мохито безалкогольный', time: '10 мин', difficulty: 'Легко', calories: 80, servings: 2 },
-        { title: 'Горячий шоколад', time: '10 мин', difficulty: 'Легко', calories: 220, servings: 2 },
-        { title: 'Латте', time: '5 мин', difficulty: 'Легко', calories: 120, servings: 1 },
-        { title: 'Чай с имбирём и мёдом', time: '10 мин', difficulty: 'Легко', calories: 60, servings: 2 },
-        { title: 'Кисель ягодный', time: '25 мин', difficulty: 'Легко', calories: 100, servings: 4 },
-        { title: 'Лимонад домашний', time: '15 мин', difficulty: 'Легко', calories: 90, servings: 4 },
-    ]
-};
-
-// Images for each category (Unsplash)
-const categoryImages = {
-    breakfast: [
-        'photo-1533089860892-a7c6f0a88666',
-        'photo-1525351484163-7529414344d8',
-        'photo-1567620905732-2d1ec7ab7445',
-        'photo-1484723091739-30a097e8f929',
-        'photo-1528207776546-365bb710ee93'
-    ],
-    lunch: [
-        'photo-1547592166-23ac45744acd',
-        'photo-1555949258-eb67b1ef0ceb',
-        'photo-1606509657065-27756f1ce31d',
-        'photo-1603105037880-880cd4edfb0d',
-        'photo-1594756202469-9ff9799b2e4e'
-    ],
-    dinner: [
-        'photo-1504674900247-0877df9cc836',
-        'photo-1546069901-ba9599a7e63c',
-        'photo-1565299624946-b28f40a0ae38',
-        'photo-1555939594-58d7cb561ad1',
-        'photo-1529694157872-4e0c0f3b238b'
-    ],
-    salads: [
-        'photo-1512621776951-a57141f2eefd',
-        'photo-1540189549336-e6e99c3679fe',
-        'photo-1490645935967-10de6ba17061',
-        'photo-1607532941433-304659e8198a',
-        'photo-1512852939750-1305098529bf'
-    ],
-    desserts: [
-        'photo-1571877227200-a0d98ea607e9',
-        'photo-1565958011703-44f9829ba187',
-        'photo-1488477181946-6428a0291777',
-        'photo-1551024601-bec78aea704b',
-        'photo-1587314168485-3236d6710814'
-    ],
-    snacks: [
-        'photo-1541014741259-de529411b96a',
-        'photo-1481931098730-318b6f776db0',
-        'photo-1604908176997-125f25cc6f3d',
-        'photo-1599490659213-e2b9527bd087',
-        'photo-1550304943-4f24f54ddde9'
-    ],
-    baking: [
-        'photo-1509440159596-0249088772ff',
-        'photo-1486427944299-d1955d23e34d',
-        'photo-1558961363-fa8fdf82db35',
-        'photo-1555507036-ab1f4038808a',
-        'photo-1499636136210-6f4ee915583e'
-    ],
-    soups: [
-        'photo-1547592166-23ac45744acd',
-        'photo-1603105037880-880cd4edfb0d',
-        'photo-1534939561126-855b8675edd7',
-        'photo-1604152135912-04a022e23696',
-        'photo-1588566565463-180a5b2090d2'
-    ],
-    main: [
-        'photo-1504674900247-0877df9cc836',
-        'photo-1612874742237-6526221588e3',
-        'photo-1532550907401-a500c9a57435',
-        'photo-1559847844-5315695dadae',
-        'photo-1560684352-8497838a2229'
-    ],
-    drinks: [
-        'photo-1513558161293-cdaf765ed2fd',
-        'photo-1544145945-f90425340c7e',
-        'photo-1556679343-c7306c1976bc',
-        'photo-1497534446932-c925b458314e',
-        'photo-1517701604599-bb29b565090c'
-    ]
-};
-
-// Adjectives for variations
-const adjectives = [
-    'Домашний', 'Классический', 'Быстрый', 'Нежный', 'Ароматный',
-    'Праздничный', 'Сочный', 'Пикантный', 'Сливочный', 'Острый',
-    'Летний', 'Зимний', 'Лёгкий', 'Сытный', 'Медовый',
-    'Сырный', 'Грибной', 'Овощной', 'Мясной', 'Рыбный'
-];
-
-// Generate full recipe with all details
-function generateRecipe(template, category, id, imageIndex) {
-    const images = categoryImages[category] || categoryImages.dinner;
-    const imageId = images[imageIndex % images.length];
-
-    return {
-        id: String(id),
-        title: template.title,
-        category: category,
-        time: template.time,
-        difficulty: template.difficulty,
-        calories: template.calories,
-        servings: template.servings,
-        macros: {
-            protein: Math.floor(template.calories * 0.15 / 4),
-            fats: Math.floor(template.calories * 0.3 / 9),
-            carbs: Math.floor(template.calories * 0.55 / 4)
-        },
-        image: `https://images.unsplash.com/${imageId}?auto=format&fit=crop&w=800&q=80`,
-        description: `Вкусный рецепт "${template.title}" с пошаговыми инструкциями. Время приготовления: ${template.time}.`,
-        ingredients: generateIngredients(template.title, template.servings),
-        instructions: generateInstructions(template.title)
-    };
-}
-
-// Generate realistic ingredients
-function generateIngredients(title, servings) {
-    const baseIngredients = [
-        { name: 'Соль', amount: 'по вкусу', calories: 0 },
-        { name: 'Перец чёрный', amount: 'по вкусу', calories: 0 },
-        { name: 'Масло растительное', amount: '2 ст.л.', calories: 180 }
-    ];
-
-    const ingredientSets = {
-        meat: [
-            { name: 'Говядина', amount: '500г', calories: 550 },
-            { name: 'Свинина', amount: '400г', calories: 600 },
-            { name: 'Курица', amount: '600г', calories: 480 },
-            { name: 'Фарш мясной', amount: '400г', calories: 500 }
+// Detailed authentic Russian recipes with real ingredients
+const authenticRecipes = [
+    // === ЗАВТРАКИ ===
+    {
+        title: 'Сырники со сметаной',
+        category: 'breakfast',
+        time: '25 мин',
+        difficulty: 'Легко',
+        calories: 320,
+        servings: 4,
+        image: 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?w=800',
+        description: 'Нежные творожные сырники с хрустящей корочкой и мягкой серединкой.',
+        ingredients: [
+            { name: 'Творог 9%', amount: '500 г', calories: 450 },
+            { name: 'Яйцо', amount: '2 шт', calories: 140 },
+            { name: 'Сахар', amount: '3 ст.л.', calories: 150 },
+            { name: 'Мука', amount: '4 ст.л.', calories: 120 },
+            { name: 'Ванильный сахар', amount: '1 пакетик', calories: 15 },
+            { name: 'Соль', amount: 'щепотка', calories: 0 },
+            { name: 'Сметана', amount: '100 г', calories: 180 }
         ],
-        vegetables: [
-            { name: 'Лук репчатый', amount: '2 шт', calories: 40 },
-            { name: 'Морковь', amount: '2 шт', calories: 50 },
-            { name: 'Картофель', amount: '4 шт', calories: 320 },
-            { name: 'Помидоры', amount: '3 шт', calories: 60 }
-        ],
-        dairy: [
-            { name: 'Сметана', amount: '200г', calories: 320 },
-            { name: 'Молоко', amount: '500мл', calories: 260 },
-            { name: 'Сыр', amount: '150г', calories: 450 },
-            { name: 'Яйца', amount: '3 шт', calories: 210 }
+        instructions: [
+            'Протрите творог через сито для воздушности.',
+            'Добавьте яйца, сахар, ванильный сахар и щепотку соли.',
+            'Всыпьте муку и замесите мягкое тесто.',
+            'Сформируйте небольшие лепёшки толщиной 1.5 см.',
+            'Обваляйте в муке и обжарьте на среднем огне по 3 минуты с каждой стороны.',
+            'Подавайте со сметаной или вареньем.'
         ]
-    };
+    },
+    {
+        title: 'Блины на молоке',
+        category: 'breakfast',
+        time: '40 мин',
+        difficulty: 'Средне',
+        calories: 250,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=800',
+        description: 'Тонкие ажурные блины - символ русской кухни.',
+        ingredients: [
+            { name: 'Молоко', amount: '500 мл', calories: 260 },
+            { name: 'Яйца', amount: '3 шт', calories: 210 },
+            { name: 'Мука', amount: '250 г', calories: 855 },
+            { name: 'Сахар', amount: '2 ст.л.', calories: 100 },
+            { name: 'Соль', amount: '0.5 ч.л.', calories: 0 },
+            { name: 'Растительное масло', amount: '3 ст.л.', calories: 360 },
+            { name: 'Сливочное масло', amount: '50 г', calories: 370 }
+        ],
+        instructions: [
+            'Взбейте яйца с сахаром и солью.',
+            'Добавьте половину молока комнатной температуры.',
+            'Постепенно введите просеянную муку, помешивая венчиком.',
+            'Влейте оставшееся молоко и растительное масло.',
+            'Дайте тесту отдохнуть 15-20 минут.',
+            'Выпекайте на раскалённой сковороде, смазанной маслом.',
+            'Каждый блин смажьте сливочным маслом.'
+        ]
+    },
+    {
+        title: 'Каша овсяная с ягодами',
+        category: 'breakfast',
+        time: '15 мин',
+        difficulty: 'Легко',
+        calories: 280,
+        servings: 2,
+        image: 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=800',
+        description: 'Полезный и сытный завтрак, заряжающий энергией на весь день.',
+        ingredients: [
+            { name: 'Овсяные хлопья', amount: '100 г', calories: 340 },
+            { name: 'Молоко', amount: '300 мл', calories: 156 },
+            { name: 'Мёд', amount: '2 ст.л.', calories: 130 },
+            { name: 'Ягоды свежие', amount: '100 г', calories: 45 },
+            { name: 'Орехи', amount: '30 г', calories: 180 }
+        ],
+        instructions: [
+            'Залейте хлопья молоком и доведите до кипения.',
+            'Варите на медленном огне 5-7 минут, помешивая.',
+            'Добавьте мёд и перемешайте.',
+            'Разложите по тарелкам и украсьте ягодами и орехами.'
+        ]
+    },
+    {
+        title: 'Творожная запеканка',
+        category: 'breakfast',
+        time: '50 мин',
+        difficulty: 'Средне',
+        calories: 340,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=800',
+        description: 'Нежная запеканка с золотистой корочкой.',
+        ingredients: [
+            { name: 'Творог', amount: '500 г', calories: 450 },
+            { name: 'Яйца', amount: '3 шт', calories: 210 },
+            { name: 'Сахар', amount: '100 г', calories: 400 },
+            { name: 'Манка', amount: '3 ст.л.', calories: 100 },
+            { name: 'Сметана', amount: '100 г', calories: 180 },
+            { name: 'Ванилин', amount: 'на кончике ножа', calories: 0 },
+            { name: 'Изюм', amount: '50 г', calories: 130 }
+        ],
+        instructions: [
+            'Смешайте творог с яйцами и сахаром.',
+            'Добавьте манку и сметану, перемешайте.',
+            'Добавьте ванилин и промытый изюм.',
+            'Выложите в смазанную форму.',
+            'Выпекайте при 180°C 35-40 минут до золотистой корочки.'
+        ]
+    },
+    {
+        title: 'Омлет с сыром и зеленью',
+        category: 'breakfast',
+        time: '10 мин',
+        difficulty: 'Легко',
+        calories: 280,
+        servings: 2,
+        image: 'https://images.unsplash.com/photo-1510693206972-df098062cb71?w=800',
+        description: 'Пышный французский омлет с начинкой.',
+        ingredients: [
+            { name: 'Яйца', amount: '4 шт', calories: 280 },
+            { name: 'Молоко', amount: '50 мл', calories: 26 },
+            { name: 'Сыр твёрдый', amount: '50 г', calories: 180 },
+            { name: 'Укроп', amount: '10 г', calories: 5 },
+            { name: 'Сливочное масло', amount: '20 г', calories: 150 },
+            { name: 'Соль, перец', amount: 'по вкусу', calories: 0 }
+        ],
+        instructions: [
+            'Взбейте яйца с молоком, солью и перцем.',
+            'Растопите масло на сковороде.',
+            'Вылейте яичную смесь и жарьте на среднем огне.',
+            'Когда омлет схватится снизу, посыпьте сыром и зеленью.',
+            'Сложите пополам и подавайте сразу.'
+        ]
+    },
 
-    let ingredients = [...baseIngredients];
+    // === СУПЫ ===
+    {
+        title: 'Борщ украинский классический',
+        category: 'soups',
+        time: '2 ч',
+        difficulty: 'Средне',
+        calories: 350,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800',
+        description: 'Наваристый борщ с мясом и свежими овощами.',
+        ingredients: [
+            { name: 'Говядина на кости', amount: '500 г', calories: 550 },
+            { name: 'Свёкла', amount: '2 шт', calories: 90 },
+            { name: 'Картофель', amount: '4 шт', calories: 320 },
+            { name: 'Капуста белокочанная', amount: '300 г', calories: 75 },
+            { name: 'Морковь', amount: '1 шт', calories: 35 },
+            { name: 'Лук репчатый', amount: '1 шт', calories: 40 },
+            { name: 'Томатная паста', amount: '2 ст.л.', calories: 30 },
+            { name: 'Чеснок', amount: '3 зубчика', calories: 12 },
+            { name: 'Сметана', amount: '100 г', calories: 180 },
+            { name: 'Зелень', amount: 'пучок', calories: 10 }
+        ],
+        instructions: [
+            'Сварите говяжий бульон, снимая пену.',
+            'Натрите свёклу на тёрке и потушите с томатной пастой.',
+            'Нарежьте картофель кубиками и добавьте в бульон.',
+            'Нашинкуйте капусту и добавьте через 10 минут.',
+            'Обжарьте лук с морковью и добавьте в суп.',
+            'Добавьте свёклу и варите ещё 10 минут.',
+            'В конце добавьте измельчённый чеснок и зелень.',
+            'Подавайте со сметаной.'
+        ]
+    },
+    {
+        title: 'Щи из свежей капусты',
+        category: 'soups',
+        time: '1.5 ч',
+        difficulty: 'Средне',
+        calories: 280,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1603105037880-880cd4edfb0d?w=800',
+        description: 'Традиционный русский суп с капустой.',
+        ingredients: [
+            { name: 'Свинина', amount: '400 г', calories: 600 },
+            { name: 'Капуста', amount: '400 г', calories: 100 },
+            { name: 'Картофель', amount: '3 шт', calories: 240 },
+            { name: 'Морковь', amount: '1 шт', calories: 35 },
+            { name: 'Лук', amount: '1 шт', calories: 40 },
+            { name: 'Лавровый лист', amount: '2 шт', calories: 0 },
+            { name: 'Соль, перец', amount: 'по вкусу', calories: 0 }
+        ],
+        instructions: [
+            'Сварите мясной бульон.',
+            'Добавьте нарезанный картофель.',
+            'Нашинкуйте капусту и добавьте в суп.',
+            'Обжарьте лук с морковью и добавьте в щи.',
+            'Варите до готовности, добавьте лавровый лист.',
+            'Подавайте со сметаной и свежей зеленью.'
+        ]
+    },
+    {
+        title: 'Солянка мясная сборная',
+        category: 'soups',
+        time: '1.5 ч',
+        difficulty: 'Сложно',
+        calories: 420,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1594756202469-9ff9799b2e4e?w=800',
+        description: 'Густой суп с несколькими видами мяса и копчёностей.',
+        ingredients: [
+            { name: 'Говядина', amount: '300 г', calories: 330 },
+            { name: 'Колбаса копчёная', amount: '150 г', calories: 450 },
+            { name: 'Сосиски', amount: '3 шт', calories: 300 },
+            { name: 'Огурцы солёные', amount: '3 шт', calories: 30 },
+            { name: 'Лук', amount: '2 шт', calories: 80 },
+            { name: 'Томатная паста', amount: '3 ст.л.', calories: 45 },
+            { name: 'Маслины', amount: '100 г', calories: 120 },
+            { name: 'Лимон', amount: '0.5 шт', calories: 15 },
+            { name: 'Каперсы', amount: '2 ст.л.', calories: 10 }
+        ],
+        instructions: [
+            'Сварите бульон из говядины.',
+            'Нарежьте все мясные продукты соломкой.',
+            'Обжарьте лук, добавьте огурцы и томатную пасту.',
+            'Добавьте мясную нарезку в бульон.',
+            'Введите зажарку и варите 15 минут.',
+            'Добавьте маслины и каперсы.',
+            'Подавайте с ломтиком лимона и сметаной.'
+        ]
+    },
+    {
+        title: 'Куриный суп с лапшой',
+        category: 'soups',
+        time: '45 мин',
+        difficulty: 'Легко',
+        calories: 260,
+        servings: 4,
+        image: 'https://images.unsplash.com/photo-1604152135912-04a022e23696?w=800',
+        description: 'Лёгкий и ароматный суп на курином бульоне.',
+        ingredients: [
+            { name: 'Курица', amount: '500 г', calories: 550 },
+            { name: 'Лапша', amount: '100 г', calories: 340 },
+            { name: 'Морковь', amount: '1 шт', calories: 35 },
+            { name: 'Лук', amount: '1 шт', calories: 40 },
+            { name: 'Картофель', amount: '2 шт', calories: 160 },
+            { name: 'Зелень', amount: 'пучок', calories: 10 }
+        ],
+        instructions: [
+            'Сварите куриный бульон, снимая пену.',
+            'Выньте курицу, разберите на кусочки.',
+            'Добавьте нарезанный картофель.',
+            'Добавьте обжаренные лук и морковь.',
+            'За 5 минут до готовности добавьте лапшу.',
+            'Верните курицу, добавьте зелень.'
+        ]
+    },
+    {
+        title: 'Грибной крем-суп',
+        category: 'soups',
+        time: '35 мин',
+        difficulty: 'Легко',
+        calories: 240,
+        servings: 4,
+        image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800',
+        description: 'Бархатистый суп-пюре из шампиньонов.',
+        ingredients: [
+            { name: 'Шампиньоны', amount: '400 г', calories: 100 },
+            { name: 'Лук', amount: '1 шт', calories: 40 },
+            { name: 'Картофель', amount: '2 шт', calories: 160 },
+            { name: 'Сливки 20%', amount: '200 мл', calories: 400 },
+            { name: 'Сливочное масло', amount: '30 г', calories: 220 },
+            { name: 'Чеснок', amount: '2 зубчика', calories: 8 }
+        ],
+        instructions: [
+            'Обжарьте грибы с луком на сливочном масле.',
+            'Отварите картофель до готовности.',
+            'Соедините грибы и картофель, пюрируйте блендером.',
+            'Добавьте сливки и прогрейте.',
+            'Подавайте с гренками и свежей зеленью.'
+        ]
+    },
 
-    // Add specific ingredients based on title
-    if (title.toLowerCase().includes('курица') || title.toLowerCase().includes('куриц')) {
-        ingredients.push({ name: 'Куриное филе', amount: '500г', calories: 450 });
+    // === ВТОРЫЕ БЛЮДА ===
+    {
+        title: 'Котлеты домашние',
+        category: 'dinner',
+        time: '45 мин',
+        difficulty: 'Средне',
+        calories: 320,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?w=800',
+        description: 'Сочные котлеты из смешанного фарша.',
+        ingredients: [
+            { name: 'Фарш говяжий', amount: '300 г', calories: 330 },
+            { name: 'Фарш свиной', amount: '200 г', calories: 400 },
+            { name: 'Лук', amount: '1 шт', calories: 40 },
+            { name: 'Хлеб белый', amount: '100 г', calories: 240 },
+            { name: 'Молоко', amount: '100 мл', calories: 52 },
+            { name: 'Яйцо', amount: '1 шт', calories: 70 },
+            { name: 'Чеснок', amount: '2 зубчика', calories: 8 }
+        ],
+        instructions: [
+            'Замочите хлеб в молоке.',
+            'Пропустите лук и чеснок через мясорубку.',
+            'Смешайте фарш с хлебом, луком и яйцом.',
+            'Добавьте соль и перец, тщательно вымесите.',
+            'Сформируйте котлеты и обваляйте в муке.',
+            'Обжарьте до золотистой корочки с обеих сторон.',
+            'Доведите до готовности под крышкой.'
+        ]
+    },
+    {
+        title: 'Пельмени сибирские',
+        category: 'dinner',
+        time: '2 ч',
+        difficulty: 'Сложно',
+        calories: 380,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800',
+        description: 'Классические домашние пельмени с мясной начинкой.',
+        ingredients: [
+            { name: 'Мука', amount: '500 г', calories: 1710 },
+            { name: 'Яйца', amount: '2 шт', calories: 140 },
+            { name: 'Вода', amount: '200 мл', calories: 0 },
+            { name: 'Говядина', amount: '300 г', calories: 330 },
+            { name: 'Свинина', amount: '200 г', calories: 400 },
+            { name: 'Лук', amount: '2 шт', calories: 80 }
+        ],
+        instructions: [
+            'Замесите тесто из муки, яиц, воды и соли.',
+            'Дайте тесту отдохнуть 30 минут.',
+            'Приготовьте фарш, пропустив мясо с луком.',
+            'Раскатайте тесто и вырежьте кружки.',
+            'Положите начинку и слепите пельмени.',
+            'Варите в подсоленной воде 7-10 минут.',
+            'Подавайте со сметаной или уксусом.'
+        ]
+    },
+    {
+        title: 'Голубцы в томатном соусе',
+        category: 'dinner',
+        time: '1.5 ч',
+        difficulty: 'Средне',
+        calories: 340,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800',
+        description: 'Капустные рулетики с мясной начинкой в ароматном соусе.',
+        ingredients: [
+            { name: 'Капуста', amount: '1 кочан', calories: 200 },
+            { name: 'Фарш мясной', amount: '500 г', calories: 750 },
+            { name: 'Рис', amount: '100 г', calories: 340 },
+            { name: 'Лук', amount: '2 шт', calories: 80 },
+            { name: 'Морковь', amount: '2 шт', calories: 70 },
+            { name: 'Томатная паста', amount: '3 ст.л.', calories: 45 },
+            { name: 'Сметана', amount: '200 г', calories: 360 }
+        ],
+        instructions: [
+            'Отварите капусту и разберите на листья.',
+            'Смешайте фарш с отваренным рисом и луком.',
+            'Заверните начинку в капустные листья.',
+            'Приготовьте соус из томатной пасты и сметаны.',
+            'Уложите голубцы в форму и залейте соусом.',
+            'Тушите 1 час до готовности.'
+        ]
+    },
+    {
+        title: 'Плов узбекский',
+        category: 'dinner',
+        time: '1.5 ч',
+        difficulty: 'Средне',
+        calories: 480,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800',
+        description: 'Ароматный рис с бараниной и специями.',
+        ingredients: [
+            { name: 'Рис девзира', amount: '500 г', calories: 1700 },
+            { name: 'Баранина', amount: '500 г', calories: 750 },
+            { name: 'Морковь', amount: '500 г', calories: 175 },
+            { name: 'Лук', amount: '2 шт', calories: 80 },
+            { name: 'Чеснок', amount: '1 головка', calories: 45 },
+            { name: 'Зира', amount: '1 ч.л.', calories: 10 },
+            { name: 'Барбарис', amount: '1 ст.л.', calories: 15 }
+        ],
+        instructions: [
+            'Обжарьте мясо в казане до румяной корочки.',
+            'Добавьте нарезанный лук и морковь соломкой.',
+            'Залейте водой и тушите 40 минут.',
+            'Добавьте специи и промытый рис.',
+            'Воткните чеснок целиком.',
+            'Готовьте на медленном огне до выпаривания воды.',
+            'Дайте настояться 15 минут.'
+        ]
+    },
+    {
+        title: 'Бефстроганов',
+        category: 'dinner',
+        time: '30 мин',
+        difficulty: 'Средне',
+        calories: 350,
+        servings: 4,
+        image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+        description: 'Нежная говядина в сливочном соусе.',
+        ingredients: [
+            { name: 'Говядина', amount: '500 г', calories: 550 },
+            { name: 'Лук', amount: '2 шт', calories: 80 },
+            { name: 'Сметана', amount: '200 г', calories: 360 },
+            { name: 'Мука', amount: '1 ст.л.', calories: 30 },
+            { name: 'Сливочное масло', amount: '50 г', calories: 370 },
+            { name: 'Горчица', amount: '1 ч.л.', calories: 10 }
+        ],
+        instructions: [
+            'Нарежьте мясо тонкой соломкой.',
+            'Обжарьте на сильном огне до румяности.',
+            'Отдельно обжарьте лук до золотистости.',
+            'Соедините мясо с луком.',
+            'Добавьте муку, сметану и горчицу.',
+            'Тушите 5-7 минут на медленном огне.',
+            'Подавайте с картофельным пюре.'
+        ]
+    },
+
+    // === САЛАТЫ ===
+    {
+        title: 'Оливье классический',
+        category: 'salads',
+        time: '45 мин',
+        difficulty: 'Легко',
+        calories: 280,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
+        description: 'Традиционный новогодний салат.',
+        ingredients: [
+            { name: 'Картофель', amount: '4 шт', calories: 320 },
+            { name: 'Морковь', amount: '2 шт', calories: 70 },
+            { name: 'Яйца', amount: '4 шт', calories: 280 },
+            { name: 'Колбаса варёная', amount: '300 г', calories: 750 },
+            { name: 'Огурцы солёные', amount: '3 шт', calories: 30 },
+            { name: 'Горошек зелёный', amount: '200 г', calories: 100 },
+            { name: 'Майонез', amount: '200 г', calories: 1340 }
+        ],
+        instructions: [
+            'Отварите картофель, морковь и яйца.',
+            'Нарежьте все ингредиенты мелкими кубиками.',
+            'Смешайте с горошком.',
+            'Заправьте майонезом, посолите.',
+            'Уберите в холодильник на 2 часа.'
+        ]
+    },
+    {
+        title: 'Сельдь под шубой',
+        category: 'salads',
+        time: '50 мин',
+        difficulty: 'Средне',
+        calories: 320,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800',
+        description: 'Слоёный салат с сельдью и овощами.',
+        ingredients: [
+            { name: 'Сельдь солёная', amount: '2 шт', calories: 400 },
+            { name: 'Свёкла', amount: '3 шт', calories: 135 },
+            { name: 'Картофель', amount: '3 шт', calories: 240 },
+            { name: 'Морковь', amount: '2 шт', calories: 70 },
+            { name: 'Яйца', amount: '3 шт', calories: 210 },
+            { name: 'Лук репчатый', amount: '1 шт', calories: 40 },
+            { name: 'Майонез', amount: '250 г', calories: 1675 }
+        ],
+        instructions: [
+            'Отварите овощи и яйца, остудите.',
+            'Разделайте сельдь на филе.',
+            'Натрите все овощи на крупной тёрке.',
+            'Выкладывайте слоями: сельдь, лук, картофель, морковь, яйца, свёкла.',
+            'Каждый слой промазывайте майонезом.',
+            'Уберите в холодильник на ночь.'
+        ]
+    },
+    {
+        title: 'Цезарь с курицей',
+        category: 'salads',
+        time: '25 мин',
+        difficulty: 'Легко',
+        calories: 350,
+        servings: 4,
+        image: 'https://images.unsplash.com/photo-1512852939750-1305098529bf?w=800',
+        description: 'Популярный салат с сочной курицей и пармезаном.',
+        ingredients: [
+            { name: 'Куриная грудка', amount: '300 г', calories: 330 },
+            { name: 'Салат романо', amount: '200 г', calories: 30 },
+            { name: 'Пармезан', amount: '50 г', calories: 180 },
+            { name: 'Чесночные гренки', amount: '100 г', calories: 400 },
+            { name: 'Соус Цезарь', amount: '100 мл', calories: 350 },
+            { name: 'Помидоры черри', amount: '100 г', calories: 20 }
+        ],
+        instructions: [
+            'Обжарьте куриную грудку до готовности.',
+            'Нарежьте курицу ломтиками.',
+            'Порвите салат руками.',
+            'Смешайте с помидорами и гренками.',
+            'Добавьте курицу и полейте соусом.',
+            'Посыпьте стружкой пармезана.'
+        ]
+    },
+    {
+        title: 'Винегрет',
+        category: 'salads',
+        time: '40 мин',
+        difficulty: 'Легко',
+        calories: 180,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
+        description: 'Классический овощной салат.',
+        ingredients: [
+            { name: 'Свёкла', amount: '2 шт', calories: 90 },
+            { name: 'Картофель', amount: '3 шт', calories: 240 },
+            { name: 'Морковь', amount: '2 шт', calories: 70 },
+            { name: 'Огурцы солёные', amount: '3 шт', calories: 30 },
+            { name: 'Горошек', amount: '150 г', calories: 75 },
+            { name: 'Лук репчатый', amount: '1 шт', calories: 40 },
+            { name: 'Масло растительное', amount: '3 ст.л.', calories: 360 }
+        ],
+        instructions: [
+            'Отварите овощи до готовности.',
+            'Нарежьте кубиками свёклу, картофель, морковь, огурцы.',
+            'Добавьте горошек и нарезанный лук.',
+            'Заправьте растительным маслом.',
+            'Посолите по вкусу.'
+        ]
+    },
+
+    // === ДЕСЕРТЫ ===
+    {
+        title: 'Медовик классический',
+        category: 'desserts',
+        time: '2 ч',
+        difficulty: 'Средне',
+        calories: 380,
+        servings: 12,
+        image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800',
+        description: 'Нежный торт с медовыми коржами и сметанным кремом.',
+        ingredients: [
+            { name: 'Мёд', amount: '150 г', calories: 450 },
+            { name: 'Сливочное масло', amount: '100 г', calories: 740 },
+            { name: 'Сахар', amount: '150 г', calories: 600 },
+            { name: 'Яйца', amount: '3 шт', calories: 210 },
+            { name: 'Мука', amount: '400 г', calories: 1370 },
+            { name: 'Сода', amount: '1.5 ч.л.', calories: 0 },
+            { name: 'Сметана', amount: '600 г', calories: 1080 }
+        ],
+        instructions: [
+            'Нагрейте мёд с маслом и сахаром.',
+            'Добавьте соду - масса увеличится.',
+            'Остудите и добавьте яйца.',
+            'Замесите мягкое тесто с мукой.',
+            'Разделите на 8 частей и раскатайте коржи.',
+            'Выпекайте каждый 5-7 минут при 180°C.',
+            'Промажьте коржи кремом из взбитой сметаны с сахаром.',
+            'Дайте торту пропитаться 8-12 часов.'
+        ]
+    },
+    {
+        title: 'Шарлотка с яблоками',
+        category: 'desserts',
+        time: '50 мин',
+        difficulty: 'Легко',
+        calories: 260,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1568571780765-9276ac8b75a2?w=800',
+        description: 'Простой и вкусный яблочный пирог.',
+        ingredients: [
+            { name: 'Яйца', amount: '4 шт', calories: 280 },
+            { name: 'Сахар', amount: '200 г', calories: 800 },
+            { name: 'Мука', amount: '200 г', calories: 685 },
+            { name: 'Яблоки', amount: '4-5 шт', calories: 200 },
+            { name: 'Корица', amount: '1 ч.л.', calories: 10 }
+        ],
+        instructions: [
+            'Взбейте яйца с сахаром до пышной пены.',
+            'Аккуратно введите муку.',
+            'Нарежьте яблоки дольками.',
+            'Выложите яблоки в смазанную форму.',
+            'Залейте тестом.',
+            'Выпекайте при 180°C 35-40 минут.'
+        ]
+    },
+    {
+        title: 'Тирамису',
+        category: 'desserts',
+        time: '40 мин',
+        difficulty: 'Средне',
+        calories: 350,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800',
+        description: 'Итальянский десерт с маскарпоне и кофе.',
+        ingredients: [
+            { name: 'Маскарпоне', amount: '500 г', calories: 2000 },
+            { name: 'Печенье савоярди', amount: '200 г', calories: 800 },
+            { name: 'Яйца', amount: '4 шт', calories: 280 },
+            { name: 'Сахар', amount: '100 г', calories: 400 },
+            { name: 'Кофе эспрессо', amount: '200 мл', calories: 10 },
+            { name: 'Какао', amount: '2 ст.л.', calories: 30 }
+        ],
+        instructions: [
+            'Сварите крепкий кофе и остудите.',
+            'Отделите желтки от белков.',
+            'Взбейте желтки с сахаром добела.',
+            'Добавьте маскарпоне и перемешайте.',
+            'Взбейте белки в крепкую пену и введите в крем.',
+            'Обмакивайте савоярди в кофе и выкладывайте слоями.',
+            'Чередуйте с кремом.',
+            'Посыпьте какао и уберите в холодильник на 6 часов.'
+        ]
+    },
+    {
+        title: 'Блины с творогом',
+        category: 'desserts',
+        time: '50 мин',
+        difficulty: 'Средне',
+        calories: 300,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=800',
+        description: 'Тонкие блинчики с нежной творожной начинкой.',
+        ingredients: [
+            { name: 'Блины готовые', amount: '12 шт', calories: 1200 },
+            { name: 'Творог', amount: '400 г', calories: 360 },
+            { name: 'Сахар', amount: '3 ст.л.', calories: 150 },
+            { name: 'Яйцо', amount: '1 шт', calories: 70 },
+            { name: 'Ванилин', amount: 'на кончике ножа', calories: 0 },
+            { name: 'Изюм', amount: '50 г', calories: 130 }
+        ],
+        instructions: [
+            'Смешайте творог с сахаром и яйцом.',
+            'Добавьте ванилин и изюм.',
+            'Положите начинку на край блина.',
+            'Сверните конвертиком.',
+            'Обжарьте до золотистой корочки.',
+            'Подавайте со сметаной.'
+        ]
+    },
+
+    // === ЗАКУСКИ ===
+    {
+        title: 'Бутерброды с красной икрой',
+        category: 'snacks',
+        time: '10 мин',
+        difficulty: 'Легко',
+        calories: 180,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1481931098730-318b6f776db0?w=800',
+        description: 'Праздничная закуска на любой стол.',
+        ingredients: [
+            { name: 'Батон белый', amount: '1/2 шт', calories: 350 },
+            { name: 'Масло сливочное', amount: '100 г', calories: 740 },
+            { name: 'Икра красная', amount: '100 г', calories: 250 },
+            { name: 'Укроп', amount: 'для украшения', calories: 5 }
+        ],
+        instructions: [
+            'Нарежьте батон ломтиками.',
+            'Намажьте каждый ломтик сливочным маслом.',
+            'Выложите икру ложкой.',
+            'Украсьте веточкой укропа.'
+        ]
+    },
+    {
+        title: 'Тарталетки с салатом',
+        category: 'snacks',
+        time: '30 мин',
+        difficulty: 'Легко',
+        calories: 150,
+        servings: 12,
+        image: 'https://images.unsplash.com/photo-1541014741259-de529411b96a?w=800',
+        description: 'Хрустящие корзиночки с разнообразными начинками.',
+        ingredients: [
+            { name: 'Тарталетки', amount: '12 шт', calories: 600 },
+            { name: 'Крабовые палочки', amount: '200 г', calories: 180 },
+            { name: 'Яйца', amount: '2 шт', calories: 140 },
+            { name: 'Кукуруза', amount: '100 г', calories: 90 },
+            { name: 'Майонез', amount: '3 ст.л.', calories: 300 }
+        ],
+        instructions: [
+            'Отварите яйца и нарежьте кубиками.',
+            'Нарежьте крабовые палочки.',
+            'Смешайте всё с кукурузой и майонезом.',
+            'Разложите салат по тарталеткам.',
+            'Украсьте зеленью.'
+        ]
+    },
+    {
+        title: 'Канапе с сёмгой',
+        category: 'snacks',
+        time: '20 мин',
+        difficulty: 'Легко',
+        calories: 120,
+        servings: 10,
+        image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800',
+        description: 'Элегантные мини-закуски для фуршета.',
+        ingredients: [
+            { name: 'Хлеб для тостов', amount: '4 ломтика', calories: 280 },
+            { name: 'Сёмга слабосолёная', amount: '150 г', calories: 270 },
+            { name: 'Сливочный сыр', amount: '100 г', calories: 340 },
+            { name: 'Огурец', amount: '0.5 шт', calories: 10 },
+            { name: 'Каперсы', amount: '1 ст.л.', calories: 5 }
+        ],
+        instructions: [
+            'Подсушите хлеб и вырежьте кружки.',
+            'Намажьте сливочным сыром.',
+            'Положите ломтик сёмги.',
+            'Украсьте огурцом и каперсами.',
+            'Закрепите шпажкой.'
+        ]
+    },
+
+    // === ВЫПЕЧКА ===
+    {
+        title: 'Пирожки с мясом',
+        category: 'baking',
+        time: '1.5 ч',
+        difficulty: 'Средне',
+        calories: 320,
+        servings: 12,
+        image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800',
+        description: 'Пышные пирожки с сочной мясной начинкой.',
+        ingredients: [
+            { name: 'Мука', amount: '500 г', calories: 1710 },
+            { name: 'Молоко', amount: '250 мл', calories: 130 },
+            { name: 'Дрожжи', amount: '10 г', calories: 30 },
+            { name: 'Сахар', amount: '2 ст.л.', calories: 100 },
+            { name: 'Масло', amount: '50 г', calories: 370 },
+            { name: 'Фарш', amount: '400 г', calories: 600 },
+            { name: 'Лук', amount: '2 шт', calories: 80 }
+        ],
+        instructions: [
+            'Разведите дрожжи в тёплом молоке.',
+            'Замесите мягкое тесто, дайте подняться.',
+            'Обжарьте фарш с луком для начинки.',
+            'Разделите тесто на части, сформируйте пирожки.',
+            'Выпекайте при 180°C до золотистого цвета.'
+        ]
+    },
+    {
+        title: 'Хачапури по-аджарски',
+        category: 'baking',
+        time: '40 мин',
+        difficulty: 'Средне',
+        calories: 450,
+        servings: 4,
+        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800',
+        description: 'Грузинская лепёшка с сыром и яйцом.',
+        ingredients: [
+            { name: 'Тесто дрожжевое', amount: '400 г', calories: 1000 },
+            { name: 'Сыр сулугуни', amount: '200 г', calories: 560 },
+            { name: 'Сыр имеретинский', amount: '200 г', calories: 500 },
+            { name: 'Яйца', amount: '4 шт', calories: 280 },
+            { name: 'Сливочное масло', amount: '50 г', calories: 370 }
+        ],
+        instructions: [
+            'Раскатайте тесто в форме лодочки.',
+            'Натрите сыры и смешайте.',
+            'Выложите сырную начинку.',
+            'Выпекайте 15 минут при 220°C.',
+            'Разбейте яйцо в центр.',
+            'Верните в духовку на 3 минуты.',
+            'Добавьте кусочек масла и подавайте горячим.'
+        ]
+    },
+
+    // === НАПИТКИ ===
+    {
+        title: 'Морс клюквенный',
+        category: 'drinks',
+        time: '20 мин',
+        difficulty: 'Легко',
+        calories: 80,
+        servings: 6,
+        image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800',
+        description: 'Освежающий витаминный напиток.',
+        ingredients: [
+            { name: 'Клюква свежая', amount: '300 г', calories: 90 },
+            { name: 'Сахар', amount: '150 г', calories: 600 },
+            { name: 'Вода', amount: '2 л', calories: 0 }
+        ],
+        instructions: [
+            'Разомните клюкву и отожмите сок.',
+            'Жмых залейте водой и прокипятите.',
+            'Процедите, добавьте сахар.',
+            'Остудите и добавьте свежий сок.',
+            'Подавайте охлаждённым.'
+        ]
+    },
+    {
+        title: 'Компот из сухофруктов',
+        category: 'drinks',
+        time: '40 мин',
+        difficulty: 'Легко',
+        calories: 90,
+        servings: 8,
+        image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800',
+        description: 'Полезный напиток из смеси сухофруктов.',
+        ingredients: [
+            { name: 'Сухофрукты', amount: '400 г', calories: 1000 },
+            { name: 'Сахар', amount: '100 г', calories: 400 },
+            { name: 'Вода', amount: '3 л', calories: 0 }
+        ],
+        instructions: [
+            'Промойте сухофрукты.',
+            'Залейте водой и доведите до кипения.',
+            'Добавьте сахар.',
+            'Варите 30 минут на медленном огне.',
+            'Дайте настояться.'
+        ]
     }
-    if (title.toLowerCase().includes('мяс') || title.toLowerCase().includes('говяд')) {
-        ingredients.push(ingredientSets.meat[Math.floor(Math.random() * ingredientSets.meat.length)]);
-    }
+];
 
-    // Add random vegetables
-    ingredients.push(ingredientSets.vegetables[Math.floor(Math.random() * ingredientSets.vegetables.length)]);
-    ingredients.push(ingredientSets.vegetables[Math.floor(Math.random() * ingredientSets.vegetables.length)]);
-
-    return ingredients;
-}
-
-// Generate cooking instructions
-function generateInstructions(title) {
-    return [
-        'Подготовьте все ингредиенты, вымойте и нарежьте.',
-        'Разогрейте сковороду с маслом на среднем огне.',
-        'Добавьте основные ингредиенты и обжарьте 5-7 минут.',
-        'Добавьте специи и приправы по вкусу.',
-        'Готовьте до готовности, периодически помешивая.',
-        'Подавайте горячим, украсив свежей зеленью.'
-    ];
-}
-
-// Generate 1000 recipes
-function generateAllRecipes() {
-    const allRecipes = [];
+// Generate the final recipe list
+function generateRecipes() {
+    const recipes = [];
     let id = 1;
 
-    // First pass: add base recipes
-    Object.keys(recipeTemplates).forEach(category => {
-        recipeTemplates[category].forEach((template, idx) => {
-            allRecipes.push(generateRecipe(template, category, id, idx));
-            id++;
+    // Add authentic recipes
+    for (const recipe of authenticRecipes) {
+        recipes.push({
+            ...recipe,
+            id: String(id)
         });
-    });
-
-    // Second pass: generate variations until we reach 1000
-    while (allRecipes.length < 1000) {
-        Object.keys(recipeTemplates).forEach(category => {
-            recipeTemplates[category].forEach((template, idx) => {
-                if (allRecipes.length >= 1000) return;
-
-                const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-                const variation = {
-                    ...template,
-                    title: `${adj} ${template.title.toLowerCase()}`,
-                    calories: template.calories + Math.floor(Math.random() * 60 - 30),
-                    servings: template.servings + Math.floor(Math.random() * 3 - 1)
-                };
-                if (variation.servings < 1) variation.servings = 1;
-
-                allRecipes.push(generateRecipe(variation, category, id, idx + id));
-                id++;
-            });
-        });
+        id++;
     }
 
-    return allRecipes.slice(0, 1000);
+    console.log(`Generated ${recipes.length} authentic recipes`);
+    return recipes;
 }
 
-// Run
-const recipes = generateAllRecipes();
-console.log(`Generated ${recipes.length} recipes`);
+// Main
+const recipes = generateRecipes();
 
 // Save to JSON
 const outputPath = path.join(__dirname, '..', 'src', 'data', 'recipes.json');
 fs.writeFileSync(outputPath, JSON.stringify(recipes, null, 2), 'utf8');
 console.log(`Saved to ${outputPath}`);
-
-// Also export for module usage
-export { recipes, categories };
