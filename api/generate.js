@@ -34,12 +34,13 @@ export default async function handler(req, res) {
         'xiaomi/mimo-v2-flash:free',          // Good speed and context
     ];
 
-    // Vision-capable models
+    // Vision-capable models - Updated for January 2026
     const visionModels = [
-        'google/gemini-2.0-flash-exp:free',        // Very fast
-        'google/gemini-flash-1.5:free',           // Most stable fallback
-        'mistralai/mistral-small-3.1-24b-instruct:free',
+        'google/gemini-flash-1.5:free',           // Highly stable
+        'google/gemma-3-27b-it:free',             // New multimodality champion
+        'qwen/qwen2.5-vl-72b-instruct:free',      // Excellent but can be busy
         'meta-llama/llama-3.2-11b-vision-instruct:free',
+        'mistralai/mistral-small-3.1-24b-instruct:free',
     ];
 
     // Check if the request involves images
@@ -51,16 +52,20 @@ export default async function handler(req, res) {
 
     // Try models sequentially until one works
     let lastError = null;
+    const startTime = Date.now();
 
     try {
         for (const currentModel of availableModels) {
+            // Respect Vercel's 10s limit
+            const elapsed = Date.now() - startTime;
+            if (elapsed > 8500) break; // Stop if we're close to 10s
+
             const controller = new AbortController();
-            // IMPORTANT: Vercel Hobby limit is 10s. 
-            // We give each model ~4s to respond so we can try at least 2 models.
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            // Give each model ~4.5s
+            const timeoutId = setTimeout(() => controller.abort(), 4500);
 
             try {
-                process.stdout.write(`Attempting ${currentModel} (Images: ${hasImages})\n`);
+                process.stdout.write(`Vercel Proxy: Trying ${currentModel} (Images: ${hasImages})\n`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -89,29 +94,29 @@ export default async function handler(req, res) {
                         return res.status(200).json(data);
                     } else {
                         console.warn(`Model ${currentModel} returned 200 but empty content.`);
-                        lastError = { status: 503, message: `Model ${currentModel} returned no content. Providers might be overloaded.` };
+                        lastError = { status: 503, message: `Модель ${currentModel} вернула пустой ответ. Провайдеры перегружены.` };
                         continue; // Try next model
                     }
                 }
 
                 const errorText = await response.text();
                 console.warn(`Model ${currentModel} status ${response.status}:`, errorText);
-                lastError = { status: response.status, message: `API Error (${currentModel}): ${errorText.substring(0, 100)}` };
+                lastError = { status: response.status, message: `Ошибка API (${currentModel}): ${errorText.substring(0, 100)}` };
 
             } catch (error) {
                 clearTimeout(timeoutId);
-                console.error(`Fetch error for ${currentModel}:`, error);
-                lastError = { status: 504, message: `Gateway Timeout or Network Error for ${currentModel}` };
+                console.error(`Vercel Proxy Error (${currentModel}):`, error);
+                lastError = { status: 504, message: `Тайм-аут или ошибка сети у ${currentModel}` };
             }
         }
 
         // If all failed, ensure we return an error status (NOT 200)
         const finalStatus = lastError?.status && lastError.status !== 200 ? lastError.status : 503;
         return res.status(finalStatus).json({
-            error: lastError?.message || 'Все ИИ-модели сейчас перегружены. Пожалуйста, попробуйте еще раз через минуту.'
+            error: { message: lastError?.message || 'Все ИИ-модели перегружены. Попробуйте через минуту.' }
         });
     } catch (e) {
         // Global catch for any unexpected errors outside the model loop
-        res.status(500).json({ error: e.message || 'Internal Server Error' });
+        res.status(500).json({ error: { message: e.message || 'Внутренняя ошибка сервера' } });
     }
 }
