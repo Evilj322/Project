@@ -277,62 +277,110 @@ const ThinkingProcess = () => {
       background: 'rgba(255,255,255,0.02)',
       borderRadius: 32,
       border: '1px solid rgba(255,255,255,0.05)',
-      position: 'relative'
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{ marginBottom: 30, position: 'relative', display: 'inline-block' }}>
-        {/* Фоновое свечение */}
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 80,
-            height: 80,
-            background: 'var(--primary)',
-            borderRadius: '50%',
-            filter: 'blur(30px)',
-            zIndex: 0
-          }}
-        />
+      <div style={{ marginBottom: 40, position: 'relative', display: 'inline-block', width: 120, height: 120 }}>
+        {/* Анимированный пар/эффект жарки */}
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            animate={{
+              y: [-20, -60],
+              x: [0, (i - 1) * 20],
+              opacity: [0, 0.5, 0],
+              scale: [0.5, 1.5]
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 2,
+              delay: i * 0.6,
+              ease: "easeOut"
+            }}
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: '45%',
+              width: 15,
+              height: 15,
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: '50%',
+              filter: 'blur(8px)',
+              zIndex: 0
+            }}
+          />
+        ))}
 
-        {/* Премиальная иконка */}
+        {/* Прыгающая сковородка/ингредиенты */}
         <motion.div
           animate={{
-            rotate: [0, 15, -15, 0],
-            scale: [1, 1.1, 1]
+            y: [0, -15, 0],
+            rotate: [0, -5, 5, 0]
           }}
-          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-          style={{ position: 'relative', zIndex: 1, color: 'var(--primary)' }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          style={{ position: 'relative', zIndex: 2, color: 'var(--primary)' }}
         >
-          <Sparkles size={64} style={{ filter: 'drop-shadow(0 0 10px var(--primary))' }} />
+          <UtensilsCrossed size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />
+
+          {/* Маленькие летающие овощи вокруг */}
+          <motion.div
+            animate={{ rotate: 360, x: [30, 40, 30], y: [-30, -40, -30] }}
+            transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+            style={{ position: 'absolute', top: 0, right: 0 }}
+          >
+            <div style={{ width: 8, height: 8, background: '#4caf50', borderRadius: '2px' }} />
+          </motion.div>
+          <motion.div
+            animate={{ rotate: -360, x: [-30, -40, -30], y: [-10, -20, -10] }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }}
+            style={{ position: 'absolute', top: 20, left: 0 }}
+          >
+            <div style={{ width: 6, height: 6, background: '#ff9800', borderRadius: '50%' }} />
+          </motion.div>
         </motion.div>
+
+        {/* Огонь под сковородкой */}
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
+          transition={{ repeat: Infinity, duration: 0.8 }}
+          style={{
+            position: 'absolute',
+            bottom: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 50,
+            height: 20,
+            background: 'radial-gradient(circle, #ff6b6b 0%, rgba(255,107,107,0) 70%)',
+            filter: 'blur(5px)',
+            zIndex: 1
+          }}
+        />
       </div>
 
       <motion.p
         key={step}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         style={{
-          fontSize: 18,
-          fontWeight: 500,
+          fontSize: 19,
+          fontWeight: 600,
           color: '#fff',
           marginBottom: 25,
-          letterSpacing: '0.5px',
-          opacity: 0.9
+          textShadow: '0 2px 10px rgba(0,0,0,0.3)'
         }}
       >
         {steps[step]}
       </motion.p>
 
-      {/* Элегантный прогресс-бар */}
-      <div style={{ width: '160px', height: '2px', background: 'rgba(255,255,255,0.05)', borderRadius: 1, margin: '0 auto' }}>
+      {/* Прогресс-бар «Разогрев» */}
+      <div style={{ width: '180px', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: 2, margin: '0 auto', overflow: 'hidden' }}>
         <motion.div
-          animate={{ width: ['0%', '100%'] }}
-          transition={{ duration: 15, ease: "linear", repeat: Infinity }}
-          style={{ height: '100%', background: 'var(--primary)', boxShadow: '0 0 10px var(--primary)' }}
+          animate={{
+            x: ['-100%', '100%'],
+            backgroundColor: ['#ff6b6b', '#ffeb3b', '#ff6b6b']
+          }}
+          transition={{ duration: 2, ease: "linear", repeat: Infinity }}
+          style={{ height: '100%', width: '60%', borderRadius: 2, boxShadow: '0 0 15px var(--primary)' }}
         />
       </div>
     </div>
