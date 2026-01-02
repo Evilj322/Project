@@ -26,12 +26,12 @@ export default async function handler(req, res) {
     const referer = req.headers.origin || req.headers.referer || 'https://chef-ai-app.vercel.app';
 
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free', // Primary - best for vision
-        'google/gemma-3-4b-it:free', // fast Google model
-        'deepseek/deepseek-r1-0528:free', // DeepSeek reasoning model
-        'meta-llama/llama-4-maverick:free', // Meta Llama 4
-        'microsoft/phi-4-reasoning-plus:free', // Microsoft reasoning
-        'mistralai/devstral-small:free', // Mistral code model
+        'google/gemini-2.0-flash-exp:free', // Primary - proven to work
+        'meta-llama/llama-3.3-70b-instruct:free', // Meta stable model
+        'qwen/qwen-2.5-72b-instruct:free', // Qwen text model (not VL!)
+        'google/gemma-2-9b-it:free', // Google Gemma 2
+        'mistralai/mistral-7b-instruct:free', // Mistral classic
+        'openchat/openchat-7b:free', // OpenChat fallback
     ];
 
     // Check if the request involves images
