@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Check, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const DetectedIngredients = ({ ingredients, onUpdate, onConfirm }) => {
+const DetectedIngredients = ({ ingredients, onUpdate, onConfirm, disabled }) => {
     const [editingIndex, setEditingIndex] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [newIngredient, setNewIngredient] = useState('');
