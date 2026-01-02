@@ -121,24 +121,36 @@ const ImageUploader = ({ onIngredientsDetected, apiKey, disabled }) => {
         }
 
         setError(null);
-
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (e) => setPreview(e.target.result);
-        reader.readAsDataURL(file);
-
-        // Analyze with AI
         setIsAnalyzing(true);
+
         try {
+            // Create preview first
+            const reader = new FileReader();
+            reader.onload = (e) => setPreview(e.target.result);
+            reader.readAsDataURL(file);
+
+            // Small delay to ensure preview is set
+            await new Promise(r => setTimeout(r, 100));
+
+            // Analyze with AI
             const base64 = await fileToBase64(file);
             const ingredients = await analyzeImageForIngredients(base64, apiKey);
-            onIngredientsDetected(ingredients);
+
+            if (ingredients && Array.isArray(ingredients)) {
+                onIngredientsDetected(ingredients);
+            } else {
+                setError('Не удалось распознать продукты. Попробуйте другое фото.');
+            }
         } catch (err) {
             console.error('Analysis failed:', err);
-            if (err.message === 'NO_API_KEY') {
-                setError('Для анализа фото требуется API ключ.');
+            const errorMessage = err?.message || 'Неизвестная ошибка';
+
+            if (errorMessage.includes('Rate limit')) {
+                setError('Превышен лимит запросов. Подождите минуту и попробуйте снова.');
+            } else if (errorMessage.includes('timeout') || errorMessage.includes('abort')) {
+                setError('Превышено время ожидания. Попробуйте снова.');
             } else {
-                setError(`Ошибка: ${err.message}`);
+                setError(`Ошибка: ${errorMessage}`);
             }
         } finally {
             setIsAnalyzing(false);
