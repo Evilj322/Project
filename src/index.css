@@ -301,6 +301,13 @@ h3 {
   align-items: center;
   z-index: 1000;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.bottom-nav.keyboard-hide {
+  transform: translateX(-50%) translateY(100px);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-item {
@@ -688,8 +695,13 @@ h3 {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .upload-error {

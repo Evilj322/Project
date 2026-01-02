@@ -194,6 +194,22 @@ const App = () => {
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [showSettings, setShowSettings] = useState(false);
 
+  // Keyboard detection for mobile to hide bottom nav
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // If height decreases significantly, keyboard is likely open
+      if (window.innerHeight < 600) {
+        setIsKeyboardVisible(true);
+      } else {
+        setIsKeyboardVisible(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('chef-favorites', JSON.stringify(favorites));
   }, [favorites]);
@@ -290,18 +306,27 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <header style={{ marginBottom: 32, textAlign: 'center' }}>
-        <img
-          src="/logo.png"
-          alt="ChefGPT"
-          style={{
-            height: 60,
-            width: 'auto',
-            marginBottom: 8,
-            filter: 'drop-shadow(0 4px 12px rgba(255, 107, 107, 0.3))'
-          }}
-        />
-        <p style={{ color: 'var(--text-muted)', margin: '4px 0', fontSize: 16 }}>Искусственный интеллект на вашей кухне</p>
+      <header style={{ marginBottom: 40, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{
+          background: 'white',
+          padding: '12px 24px',
+          borderRadius: '20px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.1)',
+          display: 'inline-flex',
+          marginBottom: 16
+        }}>
+          <img
+            src="/logo.png"
+            alt="ChefAI"
+            style={{
+              height: 48,
+              width: 'auto',
+            }}
+          />
+        </div>
+        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 16, fontWeight: 500, letterSpacing: '0.02em' }}>
+          Искусственный интеллект на вашей кухне
+        </p>
       </header>
 
       {activeTab === 'explore' && (
@@ -496,7 +521,7 @@ const App = () => {
         </motion.div>
       )}
 
-      <nav className="bottom-nav">
+      <nav className={`bottom-nav ${isKeyboardVisible ? 'keyboard-hide' : ''}`}>
         <div
           className={`nav-item ${activeTab === 'explore' ? 'active' : ''}`}
           onClick={() => setActiveTab('explore')}
