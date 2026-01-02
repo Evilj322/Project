@@ -25,13 +25,9 @@ export default async function handler(req, res) {
     // Use dynamic referer to prevent blocking
     const referer = req.headers.origin || req.headers.referer || 'https://chef-ai-app.vercel.app';
 
+    // Use ONLY the verified working model
     const backupModels = [
-        'google/gemini-2.0-flash-exp:free', // Primary - proven to work
-        'meta-llama/llama-3.3-70b-instruct:free', // Meta stable model
-        'qwen/qwen-2.5-72b-instruct:free', // Qwen text model (not VL!)
-        'google/gemma-2-9b-it:free', // Google Gemma 2
-        'mistralai/mistral-7b-instruct:free', // Mistral classic
-        'openchat/openchat-7b:free', // OpenChat fallback
+        'google/gemini-2.0-flash-exp:free', // Verified working on OpenRouter
     ];
 
     // Check if the request involves images
@@ -59,6 +55,8 @@ export default async function handler(req, res) {
 
             try {
                 console.log(`Trying model: ${currentModel}`);
+                console.log(`API Key prefix: ${apiKey.substring(0, 8)}...`);
+                console.log(`Referer: ${referer}`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {

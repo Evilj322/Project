@@ -60,9 +60,7 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
 
     // LIST OF MODELS TO TRY LOCALLY (Client-side fallback)
     const modelsToTry = [
-        'google/gemini-2.0-flash-exp:free', // Primary - proven to work
-        'meta-llama/llama-3.3-70b-instruct:free', // Meta stable model  
-        'qwen/qwen-2.5-72b-instruct:free', // Qwen text model
+        'google/gemini-2.0-flash-exp:free', // Verified working on OpenRouter
     ];
 
     try {
