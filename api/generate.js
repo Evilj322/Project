@@ -37,7 +37,8 @@ export default async function handler(req, res) {
     // Vision-capable models
     const visionModels = [
         'google/gemini-2.0-flash-exp:free',
-        'qwen/qwen-2-vl-72b-instruct:free',   // Excellent vision performance
+        'meta-llama/llama-3.2-11b-vision-instruct:free', // Very reliable free vision
+        'qwen/qwen-2-vl-72b-instruct:free',
         'google/gemini-pro-1.5-exp:free',
         'nvidia/nemotron-nano-12b-v2-vl:free',
     ];
@@ -55,11 +56,11 @@ export default async function handler(req, res) {
     try {
         for (const currentModel of availableModels) {
             const controller = new AbortController();
-            // Increased timeout for vision tasks
-            const timeoutId = setTimeout(() => controller.abort(), 40000);
+            // Increased timeout for vision tasks - some images are large
+            const timeoutId = setTimeout(() => controller.abort(), 50000);
 
             try {
-                process.stdout.write(`Trying model: ${currentModel}\n`);
+                process.stdout.write(`Attempting ${currentModel} (Images: ${hasImages})\n`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -71,8 +72,8 @@ export default async function handler(req, res) {
                     body: JSON.stringify({
                         model: currentModel,
                         messages,
-                        temperature,
-                        max_tokens: max_tokens || (hasImages ? 1000 : 4000),
+                        temperature: 0.1, // Lower temperature for better extraction
+                        max_tokens: max_tokens || (hasImages ? 800 : 4000),
                         route: 'fallback',
                     }),
                     signal: controller.signal
@@ -87,25 +88,28 @@ export default async function handler(req, res) {
                     if (data.choices && data.choices.length > 0 && data.choices[0].message?.content) {
                         return res.status(200).json(data);
                     } else {
-                        console.warn(`Model ${currentModel} returned empty successful response, trying next...`);
-                        lastError = { status: 200, message: `Model ${currentModel} returned empty message` };
+                        console.warn(`Model ${currentModel} returned 200 but empty content.`);
+                        lastError = { status: 503, message: `Model ${currentModel} returned no content. Providers might be overloaded.` };
                         continue; // Try next model
                     }
                 }
 
                 const errorText = await response.text();
-                console.warn(`Model ${currentModel} failed: ${response.status}`, errorText);
-                lastError = { status: response.status, message: `Error (${currentModel}): ${errorText.substring(0, 100)}` };
+                console.warn(`Model ${currentModel} status ${response.status}:`, errorText);
+                lastError = { status: response.status, message: `API Error (${currentModel}): ${errorText.substring(0, 100)}` };
 
             } catch (error) {
                 clearTimeout(timeoutId);
-                console.error(`Error with ${currentModel}:`, error);
-                lastError = { status: 500, message: error.message };
+                console.error(`Fetch error for ${currentModel}:`, error);
+                lastError = { status: 504, message: `Gateway Timeout or Network Error for ${currentModel}` };
             }
         }
 
-        // If all failed
-        return res.status(lastError?.status || 500).json({ error: lastError?.message || 'All models busy. Try later.' });
+        // If all failed, ensure we return an error status (NOT 200)
+        const finalStatus = lastError?.status && lastError.status !== 200 ? lastError.status : 503;
+        return res.status(finalStatus).json({
+            error: lastError?.message || 'Все ИИ-модели сейчас перегружены. Пожалуйста, попробуйте еще раз через минуту.'
+        });
     } catch (e) {
         // Global catch for any unexpected errors outside the model loop
         res.status(500).json({ error: e.message || 'Internal Server Error' });
