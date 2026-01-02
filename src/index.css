@@ -21,6 +21,28 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+a,
+input,
+textarea,
+.recipe-card,
+.category-pill,
+.nav-item,
+.favorite-btn {
+  touch-action: manipulation;
+  /* Removes 300ms delay and improves tap accuracy */
+}
+
+@media (hover: hover) {
+
+  /* Only apply hover effects on devices that support hover (mouse) */
+  .recipe-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Outfit', sans-serif;
@@ -100,8 +122,10 @@ h3 {
   transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
-.glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+@media (hover: hover) {
+  .glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
 }
 
 /* Search Bar */
@@ -187,11 +211,7 @@ h3 {
   cursor: pointer;
 }
 
-.recipe-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
+/* Hover effect moved to top of file in media query */
 
 .recipe-image-container {
   height: 220px;
@@ -270,9 +290,11 @@ h3 {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.favorite-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
+@media (hover: hover) {
+  .favorite-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+  }
 }
 
 .favorite-btn.active {

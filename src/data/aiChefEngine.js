@@ -1,7 +1,7 @@
 import { recipes } from './recipeData.js';
 
 // Default API key for seamless experience (OpenRouter)
-const DEFAULT_API_KEY = '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';
+const DEFAULT_API_KEY = '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';
 
 // OpenRouter API Configuration
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -43,21 +43,17 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${activeKey}`,
-                'HTTP-Referer': 'https://chef-ai-app.vercel.app', // Some providers require valid URL
+                'HTTP-Referer': 'https://chef-ai-app.vercel.app',
                 'X-Title': 'ChefAI'
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.0-flash-exp:free', // Trying Gemini Flash as it is more reliable for free tier
+                model: 'meta-llama/llama-3.3-70b-instruct:free',
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `Придумай РОВНО 7 разных рецептов из этих ингредиентов: ${inputString}. Верни JSON массив с 7 рецептами.` }
                 ],
                 temperature: 0.7,
-                max_tokens: 5000,
-                provider: {
-                    order: ["Google", "DeepInfra"], // Prefer reliable providers
-                    allow_fallbacks: true
-                }
+                max_tokens: 5000
             })
         });
 
