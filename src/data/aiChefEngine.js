@@ -74,7 +74,7 @@ export const generateChefGPTSuggestions = async (inputString, apiKey) => {
 
     // LIST OF MODELS TO TRY LOCALLY (Client-side fallback)
     const modelsToTry = [
-        'xiaomi/mimo-v2-flash:free', // Xiaomi free model with 262K context
+        'google/gemini-2.0-flash-exp:free', // Google Gemini 2.0 Flash Experimental
     ];
 
     try {
