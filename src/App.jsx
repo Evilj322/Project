@@ -256,26 +256,54 @@ const ThinkingProcess = () => {
   const [step, setStep] = useState(0);
   const steps = [
     "Изучаю ваши ингредиенты...",
-    "Подбираю лучшие сочетания...",
+    "Разогреваю сковородки...",
+    "Шинкую овощи...",
     "Добавляю щепотку магии...",
-    "Шеф готов представить меню!"
+    "Украшаю блюда...",
+    "Почти готово!"
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
-    }, 800);
+      setStep(prev => (prev < steps.length - 1 ? prev + 1 : (Math.random() > 0.5 ? 2 : 1)));
+    }, 1500);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="thinking-container">
-      <div className="thinking-pulse" />
+    <div className="thinking-container" style={{ textAlign: 'center', padding: '20px' }}>
+      <motion.div
+        animate={{
+          x: [-10, 10, -10],
+          y: [0, -5, 0],
+          rotate: [-5, 5, -5]
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 0.6,
+          ease: "linear"
+        }}
+        style={{ color: 'var(--primary)', marginBottom: 20, display: 'inline-block' }}
+      >
+        <ChefHat size={64} />
+      </motion.div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 15 }}>
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+            style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)' }}
+          />
+        ))}
+      </div>
+
       <motion.p
         key={step}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ fontSize: 18, fontWeight: 600, color: 'var(--primary)' }}
+        style={{ fontSize: 18, fontWeight: 600, color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
       >
         {steps[step]}
       </motion.p>
@@ -376,34 +404,41 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
-    const recipeCount = 5; // Предлагаем 5 вариантов для баланса скорости и выбора
-    let foundAny = false;
+    const recipeCount = 8; // Теперь показываем более 7 рецептов
+    let attempts = 0;
+    const maxAttempts = recipeCount;
 
     try {
-      // Запускаем 5 запросов параллельно с небольшой задержкой, чтобы не перегружать API
-      const promises = Array.from({ length: recipeCount }).map(async (_, i) => {
+      // Запускаем 8 запросов. Используем массив индексов для управления очередью.
+      const indexes = Array.from({ length: recipeCount }, (_, i) => i);
+
+      const promises = indexes.map(async (i) => {
         try {
-          // Выдерживаем паузу между запросами в 1 секунду
-          if (i > 0) await new Promise(r => setTimeout(r, i * 1000));
+          // Распределяем нагрузку: задержка увеличивается для каждого следующего запроса
+          // Это критически важно для бесплатных лимитов API
+          await new Promise(r => setTimeout(r, i * 2000));
 
           const recipe = await generateSingleAIRecipe(ingredients, [], apiKey || null);
 
-          setAiRecipes(prev => {
-            // Проверка на дубликаты (иногда ИИ выдает одно и то же)
-            if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
-            return [...prev, recipe];
-          });
-          foundAny = true;
+          if (recipe && recipe.title) {
+            setAiRecipes(prev => {
+              if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
+              const newRecipes = [...prev, recipe];
+              // Сортируем по калориям или времени для порядка, если нужно
+              return newRecipes;
+            });
+            attempts++;
+          }
         } catch (err) {
-          console.warn(`Ошибка генерации одного из рецептов:`, err);
+          console.warn(`Ошибка в потоке ${i}:`, err);
         }
       });
 
-      // Ждем завершения всех запросов
+      // Ждем завершения всех потоков
       await Promise.all(promises);
 
-      if (!foundAny) {
-        throw new Error("Не удалось сгенерировать ни одного рецепта. Попробуйте изменить список ингредиентов.");
+      if (attempts === 0) {
+        throw new Error("Нейросеть не смогла составить меню. Попробуйте изменить список продуктов.");
       }
     } catch (e) {
       console.error("AI Generation failed", e);
