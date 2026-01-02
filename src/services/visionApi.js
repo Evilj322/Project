@@ -78,7 +78,7 @@ export const analyzeImageForIngredients = async (base64Image, apiKey) => {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-exp:free',
+        // Don't specify model - server will pick the right vision model
         messages: [
           {
             role: 'user',
