@@ -24,6 +24,7 @@ export default async function handler(req, res) {
 
     const backupModels = [
         'google/gemini-2.0-flash-exp:free',
+        'google/gemini-2.0-flash-thinking-exp:free', // Additional Vision backup
         'meta-llama/llama-3.3-70b-instruct:free',
         'meta-llama/llama-3.2-11b-vision-instruct:free',
         'microsoft/phi-3-medium-128k-instruct:free'
