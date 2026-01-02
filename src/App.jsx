@@ -481,7 +481,7 @@ const App = () => {
     setAiRecipes([]);
     setError(null);
 
-    const targetCount = 3;
+    const targetCount = 8;
     const currentTitles = [];
 
     try {
@@ -489,34 +489,24 @@ const App = () => {
 
       const results = await Promise.all(indexes.map(async (i) => {
         try {
-          // Smaller staggered delay for better experience
-          await new Promise(r => setTimeout(r, i * 800));
+          // Staggered delay to respect rate limits and allow diversity
+          await new Promise(r => setTimeout(r, i * 1200));
 
-          const recipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
+          // Pass index to help AI generate diverse options
+          const recipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null, i);
 
           if (recipe && recipe.title) {
             setAiRecipes(prev => {
+              // Strict title check
               if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
               currentTitles.push(recipe.title);
               return [...prev, recipe];
             });
-            return true; // Успех
+            return true;
           }
           return false;
         } catch (err) {
-          console.error(`Ошибка в запросе ${i}:`, err);
-          try {
-            await new Promise(r => setTimeout(r, 5000));
-            const retry = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null);
-            if (retry && retry.title) {
-              setAiRecipes(prev => {
-                if (prev.some(r => r.title.toLowerCase() === retry.title.toLowerCase())) return prev;
-                currentTitles.push(retry.title);
-                return [...prev, retry];
-              });
-              return true;
-            }
-          } catch (retryErr) { }
+          console.error(`Request ${i} failed:`, err);
           return false;
         }
       }));

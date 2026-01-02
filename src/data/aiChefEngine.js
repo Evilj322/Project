@@ -122,9 +122,9 @@ async function callOpenRouter(messages, apiKey) {
 /**
  * Generate a single unique recipe
  */
-export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], apiKey = null) => {
-    const prompt = `Придумай ОДИН самый подробный и РЕАЛЬНЫЙ рецепт из этих ингредиентов: ${ingredients}. 
-Блюдо должно быть классическим и НЕ должно быть из этого списка: ${excludedTitles.join(', ')}.
+export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], apiKey = null, index = 0) => {
+    const prompt = `Придумай ОДИН уникальный и РЕАЛЬНЫЙ рецепт (Вариант №${index + 1}) из этих ингредиентов: ${ingredients}. 
+Блюдо должно быть классическим и НЕ должно повторять идеи из этого списка: ${excludedTitles.join(', ')}.
 ТРЕБОВАНИЕ: Минимум 10 подробных шагов с цифрами. Верни ТОЛЬКО JSON объект {}`;
 
     const result = await callOpenRouter([
