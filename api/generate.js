@@ -48,6 +48,9 @@ export default async function handler(req, res) {
 
     try { // Outer try block for general server errors
         for (const currentModel of availableModels) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s hard timeout per model
+
             try {
                 console.log(`Trying model: ${currentModel}`);
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -64,26 +67,31 @@ export default async function handler(req, res) {
                         temperature,
                         max_tokens,
                     }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 if (response.ok) {
                     const data = await response.json();
                     return res.status(200).json(data);
                 }
 
-                // If not OK, save error and try next model ONLY if it is 429 or 503
+                // If not OK, save error and try next model
                 const errorText = await response.text();
                 console.warn(`Model ${currentModel} failed: ${response.status}`, errorText);
                 lastError = { status: response.status, message: errorText };
 
-                if (response.status !== 429 && response.status !== 503) {
-                    // Fatal error (e.g. 401 Unauthorized), do not retry
-                    return res.status(response.status).json({ error: errorText });
-                }
-                // If 429 or 503, continue loop to next model
+                // Retry on ANY error (429, 503, 500, or even 400 if model compatibility issue)
+                // We want to be aggressive with fallback to ensure user gets a result
             } catch (error) {
+                clearTimeout(timeoutId);
                 console.error(`Error with ${currentModel}:`, error);
-                lastError = { status: 500, message: error.message };
+
+                if (error.name === 'AbortError') {
+                    lastError = { status: 408, message: `Timeout (15s) waiting for ${currentModel}` };
+                } else {
+                    lastError = { status: 500, message: error.message };
+                }
             }
         }
 
