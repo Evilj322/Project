@@ -15,6 +15,39 @@ export const categories = [
   { id: 'drinks', name: 'Напитки', icon: '🍹' }
 ];
 
+const titleTranslation = {
+  'Сырники со сметаной': 'cottage cheese pancakes',
+  'Блины на молоке': 'blini pancakes',
+  'Борщ украинский классический': 'borscht soup',
+  'Котлеты домашние': 'meat cutlets',
+  'Медовик классический': 'honey cake',
+  'Овсяная каша с ягодами': 'oatmeal berries',
+  'Творожная запеканка': 'cottage cheese cake',
+  'Омлет с сыром и зеленью': 'cheese omelette',
+  'Щи из свежей капусты': 'cabbage soup shchi',
+  'Солянка мясная сборная': 'solyanka soup',
+  'Куриный суп с лапшой': 'chicken noodle soup',
+  'Грибной крем-суп': 'mushroom cream soup',
+  'Пельмени сибирские': 'dumplings pelmeni',
+  'Голубцы в соусе': 'cabbage rolls',
+  'Плов узбекский': 'pilaf rice',
+  'Оливье классический': 'potato salad',
+  'Винегрет': 'beetroot salad',
+  'Сельдь под шубой': 'herring salad',
+  'Бефстроганов': 'beef stroganoff',
+  'Гуляш из говядины': 'beef goulash',
+  'Пюре картофельное': 'mashed potatoes',
+  'Гречка с грибами': 'buckwheat mushrooms',
+  'Деруны': 'potato pancakes',
+  'Шарлотка с яблоками': 'apple cake cake',
+  'Запеченная курица': 'roasted chicken',
+  'Тефтели в томате': 'meatballs tomato',
+  'Рыба по-московски': 'baked fish',
+  'Студень (Холодец)': 'aspic meat',
+  'Окрошка на квасе': 'okroshka soup',
+  'Рассольник': 'pickled cucumber soup'
+};
+
 // 30 authentic Russian recipes from JSON - auto-generate ID and macros if missing
 export const recipes = recipesData.map((recipe, index) => {
   // Generate macros based on calories if missing
@@ -37,7 +70,7 @@ export const recipes = recipesData.map((recipe, index) => {
   return {
     ...recipe,
     id: recipe.id || `recipe-${index + 1}`,
-    image: `https://loremflickr.com/800/600/food,${recipe.category || 'meal'}?lock=${index + 1}`,
+    image: `https://loremflickr.com/800/600/food,${encodeURIComponent(titleTranslation[recipe.title] || recipe.category || 'meal')}?lock=${index + 1}`,
     macros
   };
 });
