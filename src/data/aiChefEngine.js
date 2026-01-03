@@ -43,8 +43,7 @@ const SYSTEM_PROMPT = `Ты ЭКСТРЕМАЛЬНО ПОДРОБНЫЙ шеф-�
       "Шаг 1: Подготовка. Возьмите ровно [количество] [ингредиент] и промойте их под холодной водой...",
       "...и так далее минимум 8-12 шагов"
     ],
-    "image": null,
-    "imageSearchTerm": "English name of the dish for image search (e.g. 'Beef Stroganoff')"
+    "image": null
 }
 `;
 
@@ -133,12 +132,10 @@ export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], a
         { role: 'user', content: prompt }
     ], apiKey);
 
-    const recipeId = `ai-single-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const searchTerm = result.imageSearchTerm || result.title;
     return {
         ...result,
-        id: recipeId,
-        image: `https://loremflickr.com/800/600/food,${encodeURIComponent(searchTerm)}?lock=${recipeId.slice(-3)}`
+        id: `ai-single-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        image: null
     };
 };
 
