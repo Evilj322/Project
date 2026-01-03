@@ -363,10 +363,10 @@ const ThinkingProcess = () => {
 
 const App = () => {
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('explore');
+  const [activeTab, setActiveTab] = useState('ai');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [ingredientsInput, setIngredientsInput] = useState('');
+  const [userInput, setUserInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiRecipes, setAiRecipes] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
@@ -449,9 +449,10 @@ const App = () => {
     });
   }, [selectedCategory, searchQuery]);
 
-  const handleGenerateRecipes = async (ingredientsOverride = null) => {
-    const ingredients = ingredientsOverride || ingredientsInput;
-    if (!ingredients.trim()) return;
+  const handleGenerateRecipes = async (inputOverride = null) => {
+    const query = inputOverride || userInput;
+
+    if (!query.trim()) return;
 
     setIsGenerating(true);
     setAiRecipes([]);
@@ -468,8 +469,8 @@ const App = () => {
           // Staggered delay to respect rate limits and allow diversity
           await new Promise(r => setTimeout(r, i * 1200));
 
-          // Pass index to help AI generate diverse options
-          const recipe = await generateSingleAIRecipe(ingredients, currentTitles, apiKey || null, i);
+          // Pass query to help AI generate recipes
+          const recipe = await generateSingleAIRecipe(query, currentTitles, apiKey || null, i);
 
           if (recipe && recipe.title) {
             setAiRecipes(prev => {
@@ -518,7 +519,7 @@ const App = () => {
   // Confirm detected ingredients and generate recipes
   const handleConfirmDetectedIngredients = () => {
     const ingredientsList = detectedIngredients.join(', ');
-    setIngredientsInput(ingredientsList);
+    setUserInput(ingredientsList);
     handleGenerateRecipes(ingredientsList);
   };
 
@@ -627,20 +628,21 @@ const App = () => {
                   transition={{ duration: 0.2 }}
                 >
                   <p style={{ color: 'var(--text-muted)', fontSize: 15, marginBottom: 16 }}>
-                    Перечислите продукты, которые у вас есть, и я предложу идеальные блюда.
+                    Введите название блюда и/или ингредиенты — ИИ подберёт рецепты!
                   </p>
 
                   <textarea
                     className="ingredients-input"
-                    placeholder="Пример: курица, макароны, сливки, чеснок..."
-                    value={ingredientsInput}
-                    onChange={(e) => setIngredientsInput(e.target.value)}
+                    placeholder="Например: Плов из курицы или курица, рис, морковь..."
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    style={{ minHeight: '120px' }}
                   />
 
                   <button
                     className="generate-btn"
                     onClick={() => handleGenerateRecipes()}
-                    disabled={isGenerating || !ingredientsInput.trim()}
+                    disabled={isGenerating || !userInput.trim()}
                   >
                     {isGenerating ? 'Магия в процессе...' : <><Sparkles size={20} /> Создать рецепты</>}
                   </button>

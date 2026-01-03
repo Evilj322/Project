@@ -15,11 +15,31 @@ export const categories = [
   { id: 'drinks', name: 'Напитки', icon: '🍹' }
 ];
 
-// 30 authentic Russian recipes from JSON - auto-generate ID if missing
-export const recipes = recipesData.map((recipe, index) => ({
-  ...recipe,
-  id: recipe.id || `recipe-${index + 1}`
-}));
+// 30 authentic Russian recipes from JSON - auto-generate ID and macros if missing
+export const recipes = recipesData.map((recipe, index) => {
+  // Generate macros based on calories if missing
+  let macros = recipe.macros;
+  if (!macros || !macros.protein) {
+    // Estimate macros from calories using typical distribution
+    // Protein: ~25%, Fats: ~30%, Carbs: ~45%
+    const totalCals = recipe.calories || 300;
+    const proteinCals = totalCals * 0.25;
+    const fatsCals = totalCals * 0.30;
+    const carbsCals = totalCals * 0.45;
+
+    macros = {
+      protein: Math.round(proteinCals / 4), // 4 cal per gram of protein
+      fats: Math.round(fatsCals / 9),        // 9 cal per gram of fat
+      carbs: Math.round(carbsCals / 4)       // 4 cal per gram of carbs
+    };
+  }
+
+  return {
+    ...recipe,
+    id: recipe.id || `recipe-${index + 1}`,
+    macros
+  };
+});
 
 // Helper function to adjust ingredients for serving count
 export const adjustServings = (recipe, targetServings) => {
