@@ -132,10 +132,11 @@ export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], a
         { role: 'user', content: prompt }
     ], apiKey);
 
+    const recipeId = `ai-single-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     return {
         ...result,
-        id: `ai-single-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        image: null
+        id: recipeId,
+        image: `https://loremflickr.com/800/600/food,${encodeURIComponent(result.title)}?lock=${recipeId.slice(-3)}`
     };
 };
 
