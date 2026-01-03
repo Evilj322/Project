@@ -136,7 +136,7 @@ export const generateSingleAIRecipe = async (ingredients, excludedTitles = [], a
     return {
         ...result,
         id: recipeId,
-        image: `https://loremflickr.com/800/600/food,${encodeURIComponent(result.title)}?lock=${recipeId.slice(-3)}`
+        image: `https://loremflickr.com/800/600/food,${result.category || 'recipe'}?lock=${recipeId.slice(-3)}`
     };
 };
 

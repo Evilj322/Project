@@ -30,7 +30,12 @@ const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) =>
     </button>
     {recipe.image && (
       <div className="recipe-image-container">
-        <img src={recipe.image} alt={recipe.title} className="recipe-image" />
+        <img
+          src={recipe.image}
+          alt={recipe.title}
+          className="recipe-image"
+          onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a1a/e63946?text=ChefAI'; }}
+        />
         <div className="recipe-image-overlay" />
       </div>
     )}
@@ -61,7 +66,12 @@ const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFav
       >
         <div className="modal-handle" />
         {recipe.image && (
-          <img src={recipe.image} alt={recipe.title} className="modal-image" />
+          <img
+            src={recipe.image}
+            alt={recipe.title}
+            className="modal-image"
+            onError={(e) => { e.target.src = 'https://placehold.co/1200x800/1a1a1a/e63946?text=Delicious+Recipe'; }}
+          />
         )}
         <div className="modal-body">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

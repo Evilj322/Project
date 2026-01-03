@@ -37,7 +37,7 @@ export const recipes = recipesData.map((recipe, index) => {
   return {
     ...recipe,
     id: recipe.id || `recipe-${index + 1}`,
-    image: `https://loremflickr.com/800/600/food,${encodeURIComponent(recipe.title)}?lock=${index + 1}`,
+    image: `https://loremflickr.com/800/600/food,${recipe.category || 'meal'}?lock=${index + 1}`,
     macros
   };
 });
