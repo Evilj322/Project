@@ -6,7 +6,7 @@
     "difficulty": "Легко",
     "calories": 320,
     "servings": 4,
-    "image": "https://images.unsplash.com/photo-1506084868230-bb9d95c24759?w=800",
+    "image": "/images/syrniki.png",
     "description": "Нежные творожные сырники с хрустящей корочкой и мягкой серединкой.",
     "ingredients": [
       {
@@ -63,7 +63,7 @@
     "difficulty": "Средне",
     "calories": 250,
     "servings": 8,
-    "image": "https://images.unsplash.com/photo-1519676867240-f03562e64548?w=800",
+    "image": "/images/blini.png",
     "description": "Тонкие ажурные блины - символ русской кухни.",
     "ingredients": [
       {
@@ -120,7 +120,7 @@
     "difficulty": "Средне",
     "calories": 350,
     "servings": 8,
-    "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800",
+    "image": "/images/borscht.png",
     "description": "Наваристый борщ с мясом и свежими овощами.",
     "ingredients": [
       {
@@ -192,7 +192,7 @@
     "difficulty": "Средне",
     "calories": 320,
     "servings": 6,
-    "image": "https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?w=800",
+    "image": "/images/cutlets.png",
     "description": "Сочные котлеты из смешанного фарша.",
     "ingredients": [
       {
@@ -249,7 +249,7 @@
     "difficulty": "Сложно",
     "calories": 380,
     "servings": 12,
-    "image": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800",
+    "image": "/images/medovik.png",
     "description": "Нежный торт с медовыми коржами и сметанным кремом.",
     "ingredients": [
       {
@@ -459,7 +459,7 @@
     "difficulty": "Средне",
     "calories": 280,
     "servings": 6,
-    "image": "https://images.unsplash.com/photo-1594756202469-9ff9799b2e4e?w=800",
+    "image": "/images/shchi.png",
     "description": "Традиционный русский суп с капустой.",
     "ingredients": [
       {
@@ -515,7 +515,7 @@
     "difficulty": "Сложно",
     "calories": 420,
     "servings": 6,
-    "image": "https://images.unsplash.com/photo-1534939561126-855b8675edd7?w=800",
+    "image": "/images/solyanka.png",
     "description": "Густой суп с несколькими видами мяса и копчёностей.",
     "ingredients": [
       {
@@ -683,7 +683,7 @@
     "difficulty": "Сложно",
     "calories": 380,
     "servings": 6,
-    "image": "https://images.unsplash.com/photo-1607532941433-304659e8198a?w=800",
+    "image": "/images/pelmeni.png",
     "description": "Классические домашние пельмени с мясной начинкой.",
     "ingredients": [
       {
@@ -771,7 +771,7 @@
   {
     "title": "Плов узбекский",
     "category": "dinner",
-    "image": "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800",
+    "image": "/images/pilaf.png",
     "id": "15",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -812,7 +812,7 @@
   {
     "title": "Бефстроганов",
     "category": "dinner",
-    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800",
+    "image": "/images/stroganoff.png",
     "id": "16",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -853,7 +853,7 @@
   {
     "title": "Оливье",
     "category": "salads",
-    "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800",
+    "image": "/images/olivier.png",
     "id": "17",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -894,7 +894,7 @@
   {
     "title": "Сельдь под шубой",
     "category": "salads",
-    "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800",
+    "image": "/images/shuba.png",
     "id": "18",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -935,7 +935,7 @@
   {
     "title": "Цезарь с курицей",
     "category": "salads",
-    "image": "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=800",
+    "image": "/images/caesar.png",
     "id": "19",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -976,7 +976,7 @@
   {
     "title": "Винегрет",
     "category": "salads",
-    "image": "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=800",
+    "image": "/images/vinaigrette.png",
     "id": "20",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -1017,7 +1017,7 @@
   {
     "title": "Шарлотка с яблоками",
     "category": "desserts",
-    "image": "https://images.unsplash.com/photo-1568571780765-9276ac8b75a2?w=800",
+    "image": "/images/sharlotka.png",
     "id": "21",
     "time": "45 мин",
     "difficulty": "Средне",
@@ -1304,7 +1304,7 @@
   {
     "title": "Хачапури по-аджарски",
     "category": "baking",
-    "image": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
+    "image": "/images/khachapuri.png",
     "id": "28",
     "time": "45 мин",
     "difficulty": "Средне",
