@@ -1,377 +1,41 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Search, ChefHat, Sparkles, Utensils,
+  ChefHat, Sparkles, Utensils,
   Clock, Flame, Heart, X,
   ArrowLeft, ArrowRight, CheckCircle2,
   Zap, BrainCircuit, Salad, Coffee,
-  Settings, Brain, Camera, Type, UtensilsCrossed
+  Brain, Camera, Type, UtensilsCrossed
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { categories, recipes } from './data/recipeData';
-import { generateChefGPTSuggestions, generateSingleAIRecipe } from './data/aiChefEngine';
+import { generateSingleAIRecipe } from './data/aiChefEngine';
 import ImageUploader from './components/ImageUploader';
 import DetectedIngredients from './components/DetectedIngredients';
+import { getSystemLanguage, translations, translateCategory, translateDifficulty } from './i18n/translations';
 
-const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, index }) => (
-  <div
-    className="recipe-card"
-    // Valid HTML div doesn't support initial/animate/transition props from Framer Motion
-    // Using CSS class for animation instead if needed, but for now focusing on click reliability
-    onClick={() => onClick(recipe)}
-  >
-    <button
-      className={`favorite-btn ${isFavorite ? 'active' : ''}`}
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggleFavorite(recipe.id);
-      }}
-    >
-      <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
-    </button>
-    {recipe.image && (
-      <div className="recipe-image-container">
-        <img
-          src={recipe.image}
-          alt={recipe.title}
-          className="recipe-image"
-          onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a1a/e63946?text=ChefAI'; }}
-        />
-        <div className="recipe-image-overlay" />
-      </div>
-    )}
-    <div className="recipe-content">
-      <span className="recipe-tag">{categories.find(c => c.id === recipe.category)?.name || 'Блюдо'}</span>
-      <h3 className="recipe-title">{recipe.title}</h3>
-      <div className="recipe-info">
-        <span><Clock size={14} /> {recipe.time}</span>
-        <span><Zap size={14} /> {recipe.difficulty}</span>
-        <span><Flame size={14} /> {recipe.calories} ккал</span>
-      </div>
-    </div>
-  </div>
-);
-
-const RecipeDetail = ({ recipe, onClose, onStartCooking, isFavorite, onToggleFavorite }) => {
-
+const RecipeCard = ({ recipe, onClick, isFavorite, onToggleFavorite, lang }) => {
+  const t = translations[lang] || translations.en;
   return (
-    <div
-      className="modal-overlay"
-      onClick={onClose}
-      style={{ animation: 'fadeIn 0.2s ease-out' }}
-    >
-      <div
-        className="modal-content"
-        onClick={e => e.stopPropagation()}
-        style={{ animation: 'slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
-      >
-        <div className="modal-handle" />
-        {recipe.image && (
-          <img
-            src={recipe.image}
-            alt={recipe.title}
-            className="modal-image"
-            onError={(e) => { e.target.src = 'https://placehold.co/1200x800/1a1a1a/e63946?text=Delicious+Recipe'; }}
-          />
-        )}
-        <div className="modal-body">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span className="recipe-tag">{categories.find(c => c.id === recipe.category)?.name}</span>
-              <h2 style={{ fontSize: 28, margin: '8px 0 0 0', fontWeight: 800 }}>{recipe.title}</h2>
-            </div>
-            <button className="close-btn" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', width: 40, height: 40, borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={24} />
-            </button>
-          </div>
-
-
-
-          <div className="macros-container">
-            <div className="macro-item">
-              <span className="macro-value">{recipe.macros?.protein || 0}г</span>
-              <span className="macro-label">Белки</span>
-            </div>
-            <div className="macro-item">
-              <span className="macro-value">{recipe.macros?.fats || 0}г</span>
-              <span className="macro-label">Жиры</span>
-            </div>
-            <div className="macro-item">
-              <span className="macro-value">{recipe.macros?.carbs || 0}г</span>
-              <span className="macro-label">Углев.</span>
-            </div>
-            <div className="macro-item">
-              <span className="macro-value">{recipe.calories || 0}</span>
-              <span className="macro-label">ккал</span>
-            </div>
-          </div>
-
-          {recipe.description && (
-            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 24, padding: '0 4px' }}>
-              "{recipe.description}"
-            </p>
-          )}
-
-          <div style={{ marginBottom: 32 }}>
-            <h4 style={{ fontSize: 18, color: 'var(--primary)', marginBottom: 16 }}>Ингредиенты</h4>
-            <div className="ingredients-detailed">
-              {recipe.ingredients.map((ing, i) => (
-                <div key={i} className="ingredient-row">
-                  <span style={{ fontWeight: 500 }}>{ing.name}</span>
-                  <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{ing.amount}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 32 }}>
-            <h4 style={{ fontSize: 18, color: 'var(--primary)', marginBottom: 16 }}>Инструкция</h4>
-            <div className="instructions-stepper">
-              {recipe.instructions.map((step, i) => (
-                <div key={i} className="step-row">
-                  <div className="step-number">{i + 1}</div>
-                  <div className="step-text">{step}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button className="generate-btn" onClick={() => onStartCooking(recipe)}>
-            Начать готовить
-          </button>
+    <div className="recipe-card" onClick={() => onClick(recipe)}>
+      <button className={`favorite-btn ${isFavorite ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); onToggleFavorite(recipe.id); }}>
+        <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
+      </button>
+      <div className="recipe-content">
+        <span className="recipe-tag">{translateCategory(recipe.category, lang) || t.dish}</span>
+        <h3 className="recipe-title">{recipe.title}</h3>
+        <div className="recipe-info">
+          <span><Clock size={14} /> {recipe.time}</span>
+          <span><Zap size={14} /> {translateDifficulty(recipe.difficulty, lang)}</span>
+          <span><Flame size={14} /> {recipe.calories} {t.kcal}</span>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const CookingMode = ({ recipe, onClose }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-
-  const handleNext = () => {
-    if (currentStep < recipe.instructions.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      onClose();
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-    }
-  };
-
-  const progress = ((currentStep + 1) / recipe.instructions.length) * 100;
-
-  return (
-    <div className="cooking-mode-overlay">
-      <div className="cooking-header">
-        <button onClick={onClose} className="close-cooking-btn"><X size={24} /></button>
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
-        </div>
-        <span className="step-counter">{currentStep + 1} / {recipe.instructions.length}</span>
-      </div>
-
-      <div className="cooking-body">
-        <h2 className="step-title">Шаг {currentStep + 1}</h2>
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-          className="step-instruction"
-        >
-          {recipe.instructions[currentStep]}
-        </motion.div>
-      </div>
-
-      <div className="cooking-footer">
-        <button
-          className="nav-step-btn prev"
-          onClick={handlePrev}
-          disabled={currentStep === 0}
-        >
-          <ArrowLeft size={24} />
-        </button>
-
-        <button className="nav-step-btn next" onClick={handleNext}>
-          {currentStep === recipe.instructions.length - 1 ? (
-            <>Завершить <CheckCircle2 size={24} /></>
-          ) : (
-            <>Готово! <ArrowRight size={24} /></>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const ThinkingProcess = () => {
-  const [step, setStep] = useState(0);
-  const [iconIndex, setIconIndex] = useState(0);
-
-  const steps = [
-    "Шеф достает книгу...",
-    "Изучает ваши продукты...",
-    "Записывает идеи...",
-    "Нарезает продукты...",
-    "Разогревает соус...",
-    "Смешивает ингредиенты...",
-    "Проверяет вкус...",
-    "Добавляет специи...",
-    "Почти готово!"
-  ];
-
-  // Array of cooking-related icons
-  const cookingIcons = [
-    <UtensilsCrossed size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <ChefHat size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Salad size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Coffee size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Flame size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Utensils size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Zap size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Sparkles size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <BrainCircuit size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />,
-    <Heart size={74} style={{ filter: 'drop-shadow(0 0 15px var(--primary))' }} />
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStep(prev => (prev + 1) % steps.length);
-      setIconIndex(prev => (prev + 1) % cookingIcons.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="thinking-container" style={{
-      textAlign: 'center',
-      padding: '50px 20px',
-      background: 'rgba(255,255,255,0.02)',
-      borderRadius: 32,
-      border: '1px solid rgba(255,255,255,0.05)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      <div style={{ marginBottom: 40, position: 'relative', display: 'inline-block', width: 120, height: 120 }}>
-        {/* Анимированный пар/эффект жарки */}
-        {[0, 1, 2].map(i => (
-          <motion.div
-            key={i}
-            animate={{
-              y: [-20, -60],
-              x: [0, (i - 1) * 20],
-              opacity: [0, 0.5, 0],
-              scale: [0.5, 1.5]
-            }}
-            transition={{
-              repeat: Infinity,
-              duration: 2,
-              delay: i * 0.6,
-              ease: "easeOut"
-            }}
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: '45%',
-              width: 15,
-              height: 15,
-              background: 'rgba(255,255,255,0.2)',
-              borderRadius: '50%',
-              filter: 'blur(8px)',
-              zIndex: 0
-            }}
-          />
-        ))}
-
-        {/* Прыгающие сменяющиеся иконки */}
-        <motion.div
-          key={iconIndex}
-          initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
-          animate={{
-            scale: 1,
-            opacity: 1,
-            rotate: 0,
-            y: [0, -15, 0]
-          }}
-          transition={{
-            scale: { duration: 0.3 },
-            opacity: { duration: 0.3 },
-            rotate: { duration: 0.3 },
-            y: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
-          }}
-          style={{ position: 'relative', zIndex: 2, color: 'var(--primary)' }}
-        >
-          {cookingIcons[iconIndex]}
-
-          {/* Маленькие летающие овощи вокруг */}
-          <motion.div
-            animate={{ rotate: 360, x: [30, 40, 30], y: [-30, -40, -30] }}
-            transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-            style={{ position: 'absolute', top: 0, right: 0 }}
-          >
-            <div style={{ width: 8, height: 8, background: '#4caf50', borderRadius: '2px' }} />
-          </motion.div>
-          <motion.div
-            animate={{ rotate: -360, x: [-30, -40, -30], y: [-10, -20, -10] }}
-            transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }}
-            style={{ position: 'absolute', top: 20, left: 0 }}
-          >
-            <div style={{ width: 6, height: 6, background: '#ff9800', borderRadius: '50%' }} />
-          </motion.div>
-        </motion.div>
-
-        {/* Огонь под сковородкой */}
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
-          transition={{ repeat: Infinity, duration: 0.8 }}
-          style={{
-            position: 'absolute',
-            bottom: 10,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 50,
-            height: 20,
-            background: 'radial-gradient(circle, #ff6b6b 0%, rgba(255,107,107,0) 70%)',
-            filter: 'blur(5px)',
-            zIndex: 1
-          }}
-        />
-      </div>
-
-      <motion.p
-        key={step}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          fontSize: 19,
-          fontWeight: 600,
-          color: '#fff',
-          marginBottom: 25,
-          textShadow: '0 2px 10px rgba(0,0,0,0.3)'
-        }}
-      >
-        {steps[step]}
-      </motion.p>
-
-      {/* Прогресс-бар «Разогрев» */}
-      <div style={{ width: '180px', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: 2, margin: '0 auto', overflow: 'hidden' }}>
-        <motion.div
-          animate={{
-            x: ['-100%', '100%'],
-            backgroundColor: ['#ff6b6b', '#ffeb3b', '#ff6b6b']
-          }}
-          transition={{ duration: 2, ease: "linear", repeat: Infinity }}
-          style={{ height: '100%', width: '60%', borderRadius: 2, boxShadow: '0 0 15px var(--primary)' }}
-        />
       </div>
     </div>
   );
 };
 
 const App = () => {
+  const lang = getSystemLanguage();
+  const t = translations[lang] || translations.en;
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('ai');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -381,171 +45,57 @@ const App = () => {
   const [aiRecipes, setAiRecipes] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [activeCookingRecipe, setActiveCookingRecipe] = useState(null);
-
-  // Image recognition states
-  const [inputMode, setInputMode] = useState('text'); // 'text' or 'photo'
+  const [inputMode, setInputMode] = useState('text');
   const [detectedIngredients, setDetectedIngredients] = useState([]);
-
-  // Persistence for favorites IDs
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('chef-favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Persistence for AI generated recipes content
-  const [savedAiRecipes, setSavedAiRecipes] = useState(() => {
-    const saved = localStorage.getItem('chef-saved-ai-recipes');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // New states for API key and settings visibility
+  const [favorites, setFavorites] = useState(() => { const saved = localStorage.getItem('chef-favorites'); return saved ? JSON.parse(saved) : []; });
+  const [savedAiRecipes, setSavedAiRecipes] = useState(() => { const saved = localStorage.getItem('chef-saved-ai-recipes'); return saved ? JSON.parse(saved) : []; });
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
-  const [showSettings, setShowSettings] = useState(false);
-
-  // Keyboard detection for mobile to hide bottom nav
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  useEffect(() => {
-    const handleResize = () => {
-      // If height decreases significantly, keyboard is likely open
-      if (window.innerHeight < 600) {
-        setIsKeyboardVisible(true);
-      } else {
-        setIsKeyboardVisible(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('chef-favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
-  useEffect(() => {
-    localStorage.setItem('chef-saved-ai-recipes', JSON.stringify(savedAiRecipes));
-  }, [savedAiRecipes]);
+  useEffect(() => { localStorage.setItem('chef-favorites', JSON.stringify(favorites)); }, [favorites]);
+  useEffect(() => { localStorage.setItem('chef-saved-ai-recipes', JSON.stringify(savedAiRecipes)); }, [savedAiRecipes]);
 
   const toggleFavorite = (recipe) => {
-    console.log('toggleFavorite called with:', recipe);
     const id = recipe.id;
-    console.log('Recipe ID:', id, 'Current favorites:', favorites);
     if (favorites.includes(id)) {
       setFavorites(prev => prev.filter(f => f !== id));
-      // If it's an AI recipe, remove it from saved storage to keep it clean
-      if (id.startsWith('ai-')) {
-        setSavedAiRecipes(prev => prev.filter(r => r.id !== id));
-      }
+      if (id.startsWith('ai-')) { setSavedAiRecipes(prev => prev.filter(r => r.id !== id)); }
     } else {
       setFavorites(prev => [...prev, id]);
-      // If it's an AI recipe, save the full content so we can restore it later
-      if (id.startsWith('ai-')) {
-        setSavedAiRecipes(prev => {
-          if (!prev.find(r => r.id === id)) {
-            return [...prev, recipe];
-          }
-          return prev;
-        });
-      }
+      if (id.startsWith('ai-')) { setSavedAiRecipes(prev => { if (!prev.find(r => r.id === id)) { return [...prev, recipe]; } return prev; }); }
     }
   };
 
-  const filteredRecipes = useMemo(() => {
-    return recipes.filter(r => {
-      const matchesCategory = selectedCategory === 'all' || r.category === selectedCategory;
-      const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.ingredients.some(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
-    });
-  }, [selectedCategory, searchQuery]);
+  const filteredRecipes = useMemo(() => recipes.filter(r => {
+    const matchesCategory = selectedCategory === 'all' || r.category === selectedCategory;
+    const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.ingredients.some(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  }), [selectedCategory, searchQuery]);
 
   const handleGenerateRecipes = async (inputOverride = null) => {
     const query = inputOverride || userInput;
-
     if (!query.trim()) return;
-
-    setIsGenerating(true);
-    setAiRecipes([]);
-    setError(null);
-
-    const targetCount = 12;
-    const currentTitles = [];
-
+    setIsGenerating(true); setAiRecipes([]); setError(null);
+    const targetCount = 12; const currentTitles = [];
     try {
       const indexes = Array.from({ length: targetCount }, (_, i) => i);
-
       const results = await Promise.all(indexes.map(async (i) => {
         try {
-          // Staggered delay to respect rate limits and allow diversity
           await new Promise(r => setTimeout(r, i * 1200));
-
-          // Pass query to help AI generate recipes
           const recipe = await generateSingleAIRecipe(query, currentTitles, apiKey || null, i);
-
-          if (recipe && recipe.title) {
-            setAiRecipes(prev => {
-              // Strict title check
-              if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev;
-              currentTitles.push(recipe.title);
-              return [...prev, recipe];
-            });
-            return true;
-          }
+          if (recipe && recipe.title) { setAiRecipes(prev => { if (prev.some(r => r.title.toLowerCase() === recipe.title.toLowerCase())) return prev; currentTitles.push(recipe.title); return [...prev, recipe]; }); return true; }
           return false;
-        } catch (err) {
-          console.error(`Request ${i} failed:`, err);
-          return false;
-        }
+        } catch (err) { console.error(`Request ${i} failed:`, err); return false; }
       }));
-
-      const foundCount = results.filter(r => r === true).length;
-
-      if (foundCount === 0) {
-        throw new Error("Не удалось получить рецепты. Попробуйте уточнить продукты.");
-      }
-    } catch (e) {
-      console.error("Critical AI Error:", e);
-      setError(e.message || "Ошибка связи с Шефом. Попробуйте позже.");
-    } finally {
-      setIsGenerating(false);
-    }
+      if (results.filter(r => r === true).length === 0) { throw new Error(t.noRecipesError); }
+    } catch (e) { console.error("Critical AI Error:", e); setError(e.message || t.connectionError); }
+    finally { setIsGenerating(false); }
   };
 
-  // Handle detected ingredients from image - with safety checks
-  const handleIngredientsDetected = (ingredients) => {
-    try {
-      if (ingredients && Array.isArray(ingredients)) {
-        setDetectedIngredients(ingredients);
-      } else {
-        console.warn('Invalid ingredients received:', ingredients);
-        setDetectedIngredients([]);
-      }
-    } catch (e) {
-      console.error('Error handling ingredients:', e);
-      setDetectedIngredients([]);
-    }
-  };
+  const handleIngredientsDetected = (ingredients) => { if (ingredients && Array.isArray(ingredients)) { setDetectedIngredients(ingredients); } else { setDetectedIngredients([]); } };
+  const handleConfirmDetectedIngredients = () => { const ingredientsList = detectedIngredients.join(', '); setUserInput(ingredientsList); handleGenerateRecipes(ingredientsList); };
 
-  // Confirm detected ingredients and generate recipes
-  const handleConfirmDetectedIngredients = () => {
-    const ingredientsList = detectedIngredients.join(', ');
-    setUserInput(ingredientsList);
-    handleGenerateRecipes(ingredientsList);
-  };
-
-  const handleSaveApiKey = (key) => {
-    setApiKey(key);
-    localStorage.setItem('gemini_api_key', key);
-    // Automatically clear error if key is entered
-    if (key && error === "Для работы нейросети требуется API ключ. Пожалуйста, введите его в настройках.") {
-      setError(null);
-    }
-  };
-
-  // Combine static recipes and saved AI recipes for the Favorites tab
   const allKnownRecipes = useMemo(() => {
-    // Current AI recipes + Saved AI recipes + Static recipes
-    // Use Map to deduplicate by ID just in case
     const map = new Map();
     recipes.forEach(r => map.set(r.id, r));
     savedAiRecipes.forEach(r => map.set(r.id, r));
@@ -555,252 +105,57 @@ const App = () => {
 
   return (
     <div className="app-container" style={{ paddingTop: 120 }}>
-
       {activeTab === 'explore' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="search-container">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Что приготовим сегодня?"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
+          <div className="search-container"><input type="text" className="search-input" placeholder={t.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
           <div className="category-scroll">
-            <div
-              className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedCategory('all')}
-            >
-              Все
-            </div>
-            {categories.filter(cat => cat.id !== 'all').map(cat => (
-              <div
-                key={cat.id}
-                className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {cat.icon} {cat.name}
-              </div>
-            ))}
+            <div className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`} onClick={() => setSelectedCategory('all')}>{t.all}</div>
+            {categories.filter(cat => cat.id !== 'all').map(cat => (<div key={cat.id} className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`} onClick={() => setSelectedCategory(cat.id)}>{cat.icon} {translateCategory(cat.id, lang)}</div>))}
           </div>
-
-          <div className="recipe-grid">
-            {filteredRecipes.map((recipe, i) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                index={i}
-                onClick={setSelectedRecipe}
-                isFavorite={favorites.includes(recipe.id)}
-                onToggleFavorite={() => toggleFavorite(recipe)}
-              />
-            ))}
-          </div>
+          <div className="recipe-grid">{filteredRecipes.map((recipe, i) => (<RecipeCard key={recipe.id} recipe={recipe} index={i} onClick={setSelectedRecipe} isFavorite={favorites.includes(recipe.id)} onToggleFavorite={() => toggleFavorite(recipe)} lang={lang} />))}</div>
         </motion.div>
       )}
-
       {activeTab === 'ai' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="glass-card">
-            <div className="ai-header-title">
-              <h2 style={{ fontSize: 24, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Brain color="var(--primary)" size={32} /> ИИ Повар
-              </h2>
-            </div>
-
-            {/* Input Mode Switcher */}
+            <div className="ai-header-title"><h2 style={{ fontSize: 24, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: 12 }}><Brain color="var(--primary)" size={32} /> {t.aiChef}</h2></div>
             <div className="input-mode-switcher">
-              <button
-                className={`mode-btn ${inputMode === 'text' ? 'active' : ''}`}
-                onClick={() => setInputMode('text')}
-              >
-                <Type size={18} />
-                Написать
-              </button>
-              <button
-                className={`mode-btn ${inputMode === 'photo' ? 'active' : ''}`}
-                onClick={() => setInputMode('photo')}
-              >
-                <Camera size={18} />
-                Загрузить фото
-              </button>
+              <button className={`mode-btn ${inputMode === 'text' ? 'active' : ''}`} onClick={() => setInputMode('text')}><Type size={18} />{t.writeMode}</button>
+              <button className={`mode-btn ${inputMode === 'photo' ? 'active' : ''}`} onClick={() => setInputMode('photo')}><Camera size={18} />{t.uploadPhoto}</button>
             </div>
-
             <AnimatePresence mode="wait">
               {inputMode === 'text' ? (
-                <motion.div
-                  key="text-mode"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <p style={{ color: 'var(--text-muted)', fontSize: 15, marginBottom: 16 }}>
-                    Введите название блюда и/или ингредиенты — ИИ подберёт рецепты!
-                  </p>
-
-                  <textarea
-                    className="ingredients-input"
-                    placeholder="Например: Плов из курицы или курица, рис, морковь..."
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    style={{ minHeight: '120px' }}
-                  />
-
-                  <button
-                    className="generate-btn"
-                    onClick={() => handleGenerateRecipes()}
-                    disabled={isGenerating || !userInput.trim()}
-                  >
-                    {isGenerating ? 'Магия в процессе...' : <><Sparkles size={20} /> Создать рецепты</>}
-                  </button>
+                <motion.div key="text-mode" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 15, marginBottom: 16 }}>{t.enterIngredientsHint}</p>
+                  <textarea className="ingredients-input" placeholder={t.inputPlaceholder} value={userInput} onChange={(e) => setUserInput(e.target.value)} style={{ minHeight: '120px' }} />
+                  <button className="generate-btn" onClick={() => handleGenerateRecipes()} disabled={isGenerating || !userInput.trim()}>{isGenerating ? t.magicInProgress : <><Sparkles size={20} /> {t.createRecipes}</>}</button>
                 </motion.div>
               ) : (
-                <motion.div
-                  key="photo-mode"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <p style={{ color: 'var(--text-muted)', fontSize: 15, marginBottom: 16 }}>
-                    Сфотографируйте продукты или холодильник — ИИ определит ингредиенты.
-                  </p>
-
-                  <ImageUploader
-                    apiKey={apiKey}
-                    onIngredientsDetected={handleIngredientsDetected}
-                    disabled={isGenerating}
-                  />
-
-                  {detectedIngredients.length > 0 && (
-                    <DetectedIngredients
-                      ingredients={detectedIngredients}
-                      onUpdate={setDetectedIngredients}
-                      onConfirm={handleConfirmDetectedIngredients}
-                      disabled={isGenerating}
-                    />
-                  )}
+                <motion.div key="photo-mode" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 15, marginBottom: 16 }}>{t.photoHint}</p>
+                  <ImageUploader apiKey={apiKey} onIngredientsDetected={handleIngredientsDetected} disabled={isGenerating} />
+                  {detectedIngredients.length > 0 && (<DetectedIngredients ingredients={detectedIngredients} onUpdate={setDetectedIngredients} onConfirm={handleConfirmDetectedIngredients} disabled={isGenerating} />)}
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{ marginTop: 15, padding: 12, background: 'rgba(255, 60, 60, 0.1)', border: '1px solid rgba(255, 60, 60, 0.3)', borderRadius: 8, color: '#ff6b6b', fontSize: 14 }}
-              >
-                {error}
-              </motion.div>
-            )}
+            {error && (<motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 15, padding: 12, background: 'rgba(255, 60, 60, 0.1)', border: '1px solid rgba(255, 60, 60, 0.3)', borderRadius: 8, color: '#ff6b6b', fontSize: 14 }}>{error}</motion.div>)}
           </div>
-
           <div style={{ marginTop: 40 }}>
-            {aiRecipes.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <h3 style={{ marginBottom: 20, fontSize: 20 }}>Предложения от Шефа:</h3>
-                <div className="recipe-grid">
-                  {aiRecipes.map((recipe, i) => (
-                    <RecipeCard
-                      key={recipe.id}
-                      recipe={recipe}
-                      index={i}
-                      onClick={setSelectedRecipe}
-                      isFavorite={favorites.includes(recipe.id)}
-                      onToggleFavorite={() => toggleFavorite(recipe)}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {isGenerating && (
-              <div style={{ marginTop: aiRecipes.length > 0 ? 40 : 0 }}>
-                <ThinkingProcess />
-              </div>
-            )}
+            {aiRecipes.length > 0 && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}><h3 style={{ marginBottom: 20, fontSize: 20 }}>{t.chefSuggestions}</h3><div className="recipe-grid">{aiRecipes.map((recipe, i) => (<RecipeCard key={recipe.id} recipe={recipe} index={i} onClick={setSelectedRecipe} isFavorite={favorites.includes(recipe.id)} onToggleFavorite={() => toggleFavorite(recipe)} lang={lang} />))}</div></motion.div>)}
           </div>
         </motion.div>
       )}
-
       {activeTab === 'favorites' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2 style={{ fontSize: 28, marginBottom: 24 }}>Избранное</h2>
-          {favorites.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-              <Heart size={48} style={{ marginBottom: 16, opacity: 0.3 }} />
-              <p>Вы еще не добавили ни одного рецепта в избранное.</p>
-            </div>
-          ) : (
-            <div className="recipe-grid">
-              {allKnownRecipes.filter(r => favorites.includes(r.id)).map((recipe, i) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  index={i}
-                  onClick={setSelectedRecipe}
-                  isFavorite={true}
-                  onToggleFavorite={() => toggleFavorite(recipe)}
-                />
-              ))}
-            </div>
-          )}
+          <h2 style={{ fontSize: 28, marginBottom: 24 }}>{t.favoritesTitle}</h2>
+          {favorites.length === 0 ? (<div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}><Heart size={48} style={{ marginBottom: 16, opacity: 0.3 }} /><p>{t.noFavorites}</p></div>) : (<div className="recipe-grid">{allKnownRecipes.filter(r => favorites.includes(r.id)).map((recipe, i) => (<RecipeCard key={recipe.id} recipe={recipe} index={i} onClick={setSelectedRecipe} isFavorite={true} onToggleFavorite={() => toggleFavorite(recipe)} lang={lang} />))}</div>)}
         </motion.div>
       )}
-
       <nav className={`bottom-nav ${isKeyboardVisible ? 'keyboard-hide' : ''}`}>
-        <div
-          className={`nav-item ${activeTab === 'explore' ? 'active' : ''}`}
-          onClick={() => setActiveTab('explore')}
-        >
-          <Utensils size={24} />
-          <span>Каталог</span>
-        </div>
-        <div
-          className={`nav-item ${activeTab === 'ai' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ai')}
-        >
-          <Sparkles size={24} />
-          <span>ИИ Шеф</span>
-        </div>
-        <div
-          className={`nav-item ${activeTab === 'favorites' ? 'active' : ''}`}
-          onClick={() => setActiveTab('favorites')}
-        >
-          <ChefHat size={24} />
-          <span>Избранное</span>
-        </div>
+        <div className={`nav-item ${activeTab === 'explore' ? 'active' : ''}`} onClick={() => setActiveTab('explore')}><Utensils size={24} /><span>{t.catalog}</span></div>
+        <div className={`nav-item ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}><Sparkles size={24} /><span>{t.aiChefTab}</span></div>
+        <div className={`nav-item ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}><ChefHat size={24} /><span>{t.favorites}</span></div>
       </nav>
-
-      <AnimatePresence>
-        {selectedRecipe && (
-          <RecipeDetail
-            recipe={selectedRecipe}
-            onClose={() => setSelectedRecipe(null)}
-            onStartCooking={() => {
-              setActiveCookingRecipe(selectedRecipe);
-              setSelectedRecipe(null);
-            }}
-            isFavorite={favorites.includes(selectedRecipe.id)}
-            onToggleFavorite={() => toggleFavorite(selectedRecipe)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeCookingRecipe && (
-          <CookingMode
-            recipe={activeCookingRecipe}
-            onClose={() => setActiveCookingRecipe(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
