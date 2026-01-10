@@ -1,8 +1,5 @@
 // Translations for ChefAI app
 export const translations = {
-    ru: {
-          aiChef: '// Translations for ChefAI app
-export const translations = {
   ru: {
     aiChef: 'ИИ Повар',
     catalog: 'Каталог',
